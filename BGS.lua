@@ -270,9 +270,15 @@ end)
 
 btns:Seperator()
 
+-- ⭐ FIXED BUTTON — triple hatch now continues working
 btns:Button("Remove Egg Animation",function()
-    if ReplicatedStorage.Assets:FindFirstChild("Eggs") then
-        ReplicatedStorage.Assets.Eggs:Destroy()
+    local assets = ReplicatedStorage:FindFirstChild("Assets")
+    if assets and assets:FindFirstChild("Eggs") then
+        for _, v in pairs(assets.Eggs:GetChildren()) do
+            if v:IsA("Model") or v:IsA("Folder") then
+                v:Destroy()
+            end
+        end
     end
 end)
 

@@ -4,257 +4,226 @@ local win = DiscordLib:Window("Soggy Hub ")
 
 local serv = win:Server("BGS V1.1", "")
 
-local btns = serv:Channel("Main")
+------------------------------------------------------------
+-- MAIN
+------------------------------------------------------------
 
+local btns = serv:Channel("Main")
 local hum = game.Players.LocalPlayer.Character.HumanoidRootPart
 
 btns:Seperator()
 
 btns:Toggle("Auto Bubbles",false, function(bool)
     getgenv().autobubbles = bool 
-
-    while autobubbles do wait()
-        local args = {
-            [1] = "BlowBubble"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-    end
+    task.spawn(function()
+        while autobubbles do
+            task.wait()
+            game.ReplicatedStorage.NetworkRemoteEvent:FireServer("BlowBubble")
+        end
+    end)
 end)
 
 btns:Seperator()
 
 btns:Toggle("Auto Sell",false, function(bool)
     DiscordLib:Notification("Notification", "You must be near the sell", "Okay!")
-    wait()
-
     getgenv().autosell = bool 
-
-    while autosell do wait()
-        local args = {
-            [1] = "SellBubble",
-            [2] = "Sell"
-        }
-
-        game:GetService("ReplicatedlicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-    end
+    task.spawn(function()
+        while autosell do
+            task.wait()
+            game.ReplicatedStorage.NetworkRemoteEvent:FireServer("SellBubble","Sell")
+        end
+    end)
 end)
 
 btns:Seperator()
 
 btns:Toggle("Auto Pickup Items",false, function(bool)
-    getgenv().LollyFarm = bool;
-
-    while LollyFarm == true do
-        wait()
-        for _,pickup in pairs(game:GetService("Workspace").Pickups:GetChildren()) do
-            if pickup:IsA("MeshPart") and (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - pickup.Position).magnitude <= 50 then
-                wait()
-                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pickup.CFrame
+    getgenv().LollyFarm = bool
+    task.spawn(function()
+        while LollyFarm do
+            task.wait()
+            for _,pickup in pairs(workspace.Pickups:GetChildren()) do
+                if pickup:IsA("MeshPart") and (hum.Position - pickup.Position).Magnitude <= 50 then
+                    hum.CFrame = pickup.CFrame
+                end
             end
         end
-    end
+    end)
 end)
+
+------------------------------------------------------------
+-- EVENT FARMS
+------------------------------------------------------------
 
 local btns = serv:Channel("Event Farms")
 
 btns:Seperator()
 
 btns:Toggle("Auto Farm Houses",false, function(bool)
-    getgenv().AutoKnock = bool;
-
-    while (AutoKnock) do
-        for i,v in next, game:GetService("Workspace").ChristmasMap.Houses:GetChildren() do
-            local root = v.Activation.Root;
-            local houseClaimable = v.Activation.Active.Value;
-    
-            if (houseClaimable) then
-                game:GetService("TweenService"):Create(game.Players.LocalPlayer.Character.HumanoidRootPart, TweenInfo.new(3.5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut),{CFrame = v.Activation.Root.CFrame}):Play()
-                wait(4.5)
+    getgenv().AutoKnock = bool
+    task.spawn(function()
+        while AutoKnock do
+            for _,v in pairs(workspace.ChristmasMap.Houses:GetChildren()) do
+                if v.Activation.Active.Value then
+                    local root = v.Activation.Root
+                    game.TweenService:Create(hum, TweenInfo.new(3.5), {CFrame = root.CFrame}):Play()
+                    task.wait(4.5)
+                end
             end
         end
-    end
+    end)
 end)
+
+------------------------------------------------------------
+-- QUESTS
+------------------------------------------------------------
 
 local btns = serv:Channel("Quests And More + ")
 
 btns:Toggle("Auto Quests",false, function(bool)
     getgenv().autoquests = bool
-    
-    while autoquests do 
-        wait()
-            local args = {
-                [1] = "ClaimShardQuestReward"
-            }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        wait()
-        local args2 = {
-            [1] = "GetShardQuest",
-            [2] = "Hard"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args2))
-    end
+    task.spawn(function()
+        while autoquests do
+            task.wait()
+            game.ReplicatedStorage.NetworkRemoteEvent:FireServer("ClaimShardQuestReward")
+            task.wait()
+            game.ReplicatedStorage.NetworkRemoteEvent:FireServer("GetShardQuest","Hard")
+        end
+    end)
 end)
 
 btns:Seperator()
 
 btns:Toggle("Auto Spin Wheel",false, function(bool)
-        
-    getgenv().spinwheel = bool 
-    
-    while spinwheel do wait()
-        local args = {
-            [1] = "SpinToWin"
-        }
-
-    game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-    end
+    getgenv().spinwheel = bool
+    task.spawn(function()
+        while spinwheel do
+            task.wait()
+            game.ReplicatedStorage.NetworkRemoteEvent:FireServer("SpinToWin")
+        end
+    end)
 end)
 
 btns:Seperator()
 
 btns:Toggle("Auto Chests",false, function(bool)
-
     getgenv().AutoChests = bool
-
-    while AutoChests do 
-        local args = {
-            [1] = "CollectChestReward",
-            [2] = "The Floating Island"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        wait()
-        local args = {
-            [1] = "CollectChestReward",
-            [2] = "The Twilight"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        wait()
-        local args = {
-            [1] = "CollectChestReward",
-            [2] = "XP Island"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        wait()
-        local args = {
-            [1] = "CollectChestReward",
-            [2] = "The Void"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        wait()
-        local args = {
-            [1] = "CollectChestReward",
-            [2] = "Atlantis"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        wait()
-        local args = {
-            [1] = "CollectChestReward",
-            [2] = "Underworld"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        wait()
-        local args = {
-            [1] = "CollectChestReward",
-            [2] = "Rainbow Land"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        wait()
-        local args = {
-            [1] = "CollectChestReward",
-            [2] = "Mystic Forest"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        wait()
-        local args = {
-            [1] = "CollectChestReward",
-            [2] = "Toy Land"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        wait()
-        local args = {
-            [1] = "CollectChestReward",
-            [2] = "Candy Land"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        wait()
-        local args = {
-            [1] = "CollectChestReward",
-            [2] = "Beach World"
-        }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-    end
+    local chestList = {
+        "The Floating Island","The Twilight","XP Island","The Void","Atlantis",
+        "Underworld","Rainbow Land","Mystic Forest","Toy Land","Candy Land","Beach World"
+    }
+    task.spawn(function()
+        while AutoChests do
+            for _,chest in ipairs(chestList) do
+                game.ReplicatedStorage.NetworkRemoteEvent:FireServer("CollectChestReward", chest)
+                task.wait()
+            end
+        end
+    end)
 end)
+
+------------------------------------------------------------
+-- CODES
+------------------------------------------------------------
 
 local btns = serv:Channel("Codes + Events")
 
 btns:Toggle("Redeem Codes",false, function(bool)
-    getgenv().autoCodes = bool 
-
-    while autoCodes do wait()
-        -- (Your long code list stays unchanged)
-    end
+    getgenv().autoCodes = bool
+    task.spawn(function()
+        while autoCodes do
+            task.wait()
+            -- Your long code list stays unchanged
+        end
+    end)
 end)
 
 btns:Seperator()
 
 btns:Toggle("Toggle Events",false, function(bool)
-    getgenv().eventscool = bool 
-
-    while eventscool do wait()
-        game.ReplicatedStorage.Assets.Modules.Is2xSpeedEnabled.Enabled.Value = true
-        wait()
-        game:GetService("ReplicatedStorage").Assets.Modules.Is2xLuckEnabled.Value  = true
-    end
+    getgenv().eventscool = bool
+    task.spawn(function()
+        while eventscool do
+            task.wait()
+            game.ReplicatedStorage.Assets.Modules.Is2xSpeedEnabled.Enabled.Value = true
+            game.ReplicatedStorage.Assets.Modules.Is2xLuckEnabled.Value = true
+        end
+    end)
 end)
 
---========================--
---      EGGS SECTION      --
---========================--
+------------------------------------------------------------
+-- EGGS (FULLY FIXED + MODERNIZED)
+------------------------------------------------------------
 
 local btns = serv:Channel("Eggs")
 
-local EggsFolder = workspace:WaitForChild("Eggs")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local EggsFolder = workspace:WaitForChild("Eggs")
 
 local SelectedEgg = nil
-local tripleeggs = false
+
+local autoHatch = false
+local singleHatch = false
+local tripleHatch = false
 
 local eggs = {}
-for _, v in pairs(EggsFolder:GetChildren()) do
-    table.insert(eggs, v.Name)
+for _, egg in pairs(EggsFolder:GetChildren()) do
+    table.insert(eggs, egg.Name)
 end
 
 btns:Seperator()
 
-btns:Dropdown("Choose Egg", eggs, function(CurrentOption)
-    SelectedEgg = CurrentOption
+btns:Dropdown("Choose Egg", eggs, function(option)
+    SelectedEgg = option
 end)
 
+-- KEYBINDS
+UIS.InputBegan:Connect(function(input, gp)
+    if gp then return end
+
+    if input.KeyCode == Enum.KeyCode.T then
+        autoHatch = not autoHatch
+        DiscordLib:Notification("Auto Hatch", autoHatch and "Enabled" or "Disabled", "OK")
+    end
+
+    if input.KeyCode == Enum.KeyCode.R then
+        if SelectedEgg then
+            ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg, "Multi")
+        end
+    end
+end)
+
+-- AUTO HATCH ENGINE
 RunService.Heartbeat:Connect(function()
-    if tripleeggs and SelectedEgg then
+    if not SelectedEgg then return end
+
+    if autoHatch then
+        ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg)
+    end
+
+    if singleHatch then
+        ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg)
+    end
+
+    if tripleHatch then
         ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg, "Multi")
     end
 end)
 
-btns:Seperator()
+-- GUI Toggles
+btns:Toggle("Auto Hatch (T)", false, function(state)
+    autoHatch = state
+end)
 
-btns:Toggle("Triple Open Selected Egg", false, function(bool)
-    tripleeggs = bool
+btns:Toggle("Single Hatch", false, function(state)
+    singleHatch = state
+end)
+
+btns:Toggle("Triple Hatch", false, function(state)
+    tripleHatch = state
 end)
 
 btns:Seperator()
@@ -268,5 +237,5 @@ end)
 btns:Seperator()
 
 btns:Button("Stats Counter", function()
-    game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.MobileStats.Visible = true
+    game.Players.LocalPlayer.PlayerGui.ScreenGui.MobileStats.Visible = true
 end)

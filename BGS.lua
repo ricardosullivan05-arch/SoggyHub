@@ -1,6 +1,10 @@
--- Simple Fast Triple Hatch Loader (BGS)
+-- Simple Fast Triple Hatch Loader (BGS) with R Toggle
 local rs = game:GetService("ReplicatedStorage")
+local uis = game:GetService("UserInputService")
 local eggs = workspace:WaitForChild("Eggs")
+local plr = game:GetService("Players").LocalPlayer
+local hrp = plr.Character:WaitForChild("HumanoidRootPart")
+
 local selectedEgg = nil
 local running = false
 
@@ -18,7 +22,7 @@ if assets and assets:FindFirstChild("Eggs") then
     end
 end
 
--- Choose nearest egg automatically
+-- Auto-select nearest egg
 task.spawn(function()
     while true do
         task.wait(0.2)
@@ -26,7 +30,7 @@ task.spawn(function()
         for _,egg in pairs(eggs:GetChildren()) do
             local p = egg:FindFirstChild("Part")
             if p then
-                local d = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - p.Position).Magnitude
+                local d = (hrp.Position - p.Position).Magnitude
                 if d < dist then
                     dist = d
                     closest = egg.Name
@@ -37,15 +41,25 @@ task.spawn(function()
     end
 end)
 
--- Triple hatch loop
-running = true
-task.spawn(function()
-    while running do
-        if selectedEgg then
-            rs.NetworkRemoteEvent:FireServer("PurchaseEgg", selectedEgg, "Multi")
+-- R toggle for fast triple hatch
+uis.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Enum.KeyCode.R then
+        running = not running
+        if running then
+            print("Fast Triple Hatch: ENABLED")
+            task.spawn(function()
+                while running do
+                    if selectedEgg then
+                        rs.NetworkRemoteEvent:FireServer("PurchaseEgg", selectedEgg, "Multi")
+                    end
+                    task.wait(0.05) -- FAST hatch
+                end
+            end)
+        else
+            print("Fast Triple Hatch: DISABLED")
         end
-        task.wait(0.05) -- FAST hatch
     end
 end)
 
-print("Fast Triple Hatch Loader: RUNNING")
+print("Fast Triple Hatch Loader Loaded. Press R to toggle.")

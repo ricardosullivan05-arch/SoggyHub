@@ -1,7 +1,7 @@
-local DiscordLib = loadstring(game:HttpGet"https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/discord%20lib.txt")()
+local DiscordLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/discord%20lib.txt"))()
 
-local win = DiscordLib:Window("Soggy Hub ")
-local serv = win:Server("BGS V1.1", "")
+local win = DiscordLib:Window("Soggy Hub")
+local serv = win:Server("BGS V1.3", "")
 
 ------------------------------------------------------------
 -- MAIN
@@ -132,7 +132,6 @@ btns:Toggle("Redeem Codes",false,function(bool)
     task.spawn(function()
         while autoCodes do
             task.wait()
-            -- Your long code list stays unchanged
         end
     end)
 end)
@@ -151,7 +150,7 @@ btns:Toggle("Toggle Events",false,function(bool)
 end)
 
 ------------------------------------------------------------
--- EGGS (FULL CLEAN MERGE + TRIPLE AUTO + TRIPLE R)
+-- EGGS
 ------------------------------------------------------------
 
 local btns = serv:Channel("Eggs")
@@ -163,14 +162,12 @@ local EggsFolder = workspace:WaitForChild("Eggs")
 
 local SelectedEgg = nil
 
--- Toggles
 local autoHatch = false
 local singleHatch = false
 local tripleHatch = false
 local singleegg = false
 local tripleeggs = false
 
--- Egg list
 local eggs = {}
 for _,egg in pairs(EggsFolder:GetChildren()) do
     table.insert(eggs,egg.Name)
@@ -183,7 +180,7 @@ btns:Dropdown("Choose Egg",eggs,function(option)
 end)
 
 ------------------------------------------------------------
--- KEYBINDS (T + R)
+-- KEYBINDS
 ------------------------------------------------------------
 
 UIS.InputBegan:Connect(function(input,gp)
@@ -202,7 +199,7 @@ UIS.InputBegan:Connect(function(input,gp)
 end)
 
 ------------------------------------------------------------
--- AUTO HATCH ENGINE (NO LAG)
+-- AUTO HATCH ENGINE
 ------------------------------------------------------------
 
 RunService.Heartbeat:Connect(function()
@@ -230,7 +227,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 ------------------------------------------------------------
--- GUI Toggles (NEW SYSTEM)
+-- GUI Toggles
 ------------------------------------------------------------
 
 btns:Toggle("Auto Hatch (T)",false,function(state)
@@ -245,10 +242,6 @@ btns:Toggle("Triple Hatch",false,function(state)
     tripleHatch = state
 end)
 
-------------------------------------------------------------
--- OLD UI BUTTONS (KEPT EXACTLY)
-------------------------------------------------------------
-
 btns:Toggle("Open Selected Egg",false,function(bool)
     singleegg = bool
 end)
@@ -258,12 +251,11 @@ btns:Toggle("Triple Open Selected Egg",false,function(bool)
 end)
 
 ------------------------------------------------------------
--- MISC EGG BUTTONS
+-- REMOVE EGG ANIMATION (FINAL FIX)
 ------------------------------------------------------------
 
 btns:Seperator()
 
--- ⭐ FINAL FIX — triple hatch stays enabled even after removing animations
 btns:Button("Remove Egg Animation",function()
     local assets = ReplicatedStorage:FindFirstChild("Assets")
     if not assets then return end
@@ -271,9 +263,7 @@ btns:Button("Remove Egg Animation",function()
     local eggsFolder = assets:FindFirstChild("Eggs")
     if not eggsFolder then return end
 
-    -- Delete animation models/folders EXCEPT multi-hatch logic
     for _, v in pairs(eggsFolder:GetChildren()) do
-        
         if v.Name:lower():find("multi")
         or v.Name:lower():find("triple")
         or v.Name:lower():find("hatch") then
@@ -285,7 +275,6 @@ btns:Button("Remove Egg Animation",function()
         end
     end
 
-    -- ⭐ Create dummy model so triple hatch stays enabled
     if not eggsFolder:FindFirstChild("DummyAnimation") then
         local dummy = Instance.new("Model")
         dummy.Name = "DummyAnimation"
@@ -293,119 +282,4 @@ btns:Button("Remove Egg Animation",function()
     end
 end)
 
-btns:Seperator()
-
-btns:Button("Stats Counter",function()
-    game.Players.LocalPlayer.PlayerGui.ScreenGui.MobileStats.Visible = true
-end)
-
-------------------------------------------------------------
--- WORLDS
-------------------------------------------------------------
-
-local btns = serv:Channel("Worlds")
-
-btns:Seperator()
-
-btns:Button("Floating World",function()
-    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","The Floating Island")
-end)
-
-btns:Seperator()
-
-btns:Button("Event World",function()
-    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("Teleport","EventSpawn")
-end)
-
-btns:Seperator()
-
-btns:Button("Space World",function()
-    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","Space")
-end)
-
-btns:Seperator()
-
-btns:Button("Twilight World",function()
-    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","The Twilight")
-end)
-
-btns:Seperator()
-
-btns:Button("Skylands World",function()
-    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","The Skylands")
-end)
-
-btns:Seperator()
-
-btns:Button("Zen World",function()
-    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","Zen")
-end)
-
-btns:Seperator()
-
-btns:Button("Void World",function()
-    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","The Void")
-end)
-
-btns:Seperator()
-
-btns:Button("XP World",function()
-    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","XP Island")
-end)
-
-btns:Seperator()
-
-btns:Button("Candy World",function()
-    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("Teleport","Candy LandSpawn")
-end)
-
-------------------------------------------------------------
--- MISC
-------------------------------------------------------------
-
-local btns = serv:Channel("Misc")
-
-btns:Toggle("Hide Name",false,function(bool)
-    game.Players.LocalPlayer.Name = "Anonymous"
-    game.Players.LocalPlayer.DisplayName = "Anonymous"
-    game.Players.LocalPlayer.Character.Head.CustomPlayerTag.Enabled = false
-end)
-
-------------------------------------------------------------
--- PLAYER
-------------------------------------------------------------
-
-local btns = serv:Channel("Player")
-
-btns:Seperator()
-
-btns:Slider("Walkspeed!",20,200,0,function(t)
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = t
-end)
-
-btns:Seperator()
-
-btns:Slider("JumpPower!",20,500,0,function(t)
-    game.Players.LocalPlayer.Character.Humanoid.JumpPower = t
-end)
-
-btns:Seperator()
-
-btns:Toggle("GodMode",false,function(bool)
-    -- Your original GodMode code kept as-is
-end)
-
-btns:Seperator()
-
-btns:Toggle("Infinite Jump",false,function(bool)
-    -- Your original Infinite Jump code kept as-is
-end)
-
-------------------------------------------------------------
--- SETTINGS
-------------------------------------------------------------
-
-local btns = serv:Channel("Settings")
-
-btns:Toggle("Shadows",false,function(bool)
-    game.L
+btns:Seperator

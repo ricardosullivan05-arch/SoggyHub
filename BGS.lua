@@ -1,7 +1,7 @@
 local DiscordLib = loadstring(game:HttpGet"https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/discord%20lib.txt")()
 
 local win = DiscordLib:Window("Soggy Hub ")
-local serv = win:Server("BGS V1.1", "")
+local serv = win:Server("BGS V1.2", "")
 
 ------------------------------------------------------------
 -- MAIN
@@ -189,13 +189,11 @@ end)
 UIS.InputBegan:Connect(function(input,gp)
     if gp then return end
 
-    -- T = Auto Triple Hatch
     if input.KeyCode == Enum.KeyCode.T then
         autoHatch = not autoHatch
         DiscordLib:Notification("Auto Hatch",autoHatch and "Enabled" or "Disabled","OK")
     end
 
-    -- R = Manual Triple Hatch
     if input.KeyCode == Enum.KeyCode.R then
         if SelectedEgg then
             ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg",SelectedEgg,"Multi")
@@ -210,27 +208,22 @@ end)
 RunService.Heartbeat:Connect(function()
     if not SelectedEgg then return end
 
-    -- Auto Hatch (T) → TRIPLE
     if autoHatch then
         ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg",SelectedEgg,"Multi")
     end
 
-    -- New Single Hatch toggle
     if singleHatch then
         ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg",SelectedEgg)
     end
 
-    -- New Triple Hatch toggle
     if tripleHatch then
         ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg",SelectedEgg,"Multi")
     end
 
-    -- Old UI Single Hatch
     if singleegg then
         ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg",SelectedEgg)
     end
 
-    -- Old UI Triple Hatch
     if tripleeggs then
         ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg",SelectedEgg,"Multi")
     end
@@ -270,15 +263,33 @@ end)
 
 btns:Seperator()
 
--- ⭐ FIXED BUTTON — triple hatch now continues working
+-- ⭐ FINAL FIX — triple hatch stays enabled even after removing animations
 btns:Button("Remove Egg Animation",function()
     local assets = ReplicatedStorage:FindFirstChild("Assets")
-    if assets and assets:FindFirstChild("Eggs") then
-        for _, v in pairs(assets.Eggs:GetChildren()) do
-            if v:IsA("Model") or v:IsA("Folder") then
-                v:Destroy()
-            end
+    if not assets then return end
+
+    local eggsFolder = assets:FindFirstChild("Eggs")
+    if not eggsFolder then return end
+
+    -- Delete animation models/folders EXCEPT multi-hatch logic
+    for _, v in pairs(eggsFolder:GetChildren()) do
+        
+        if v.Name:lower():find("multi")
+        or v.Name:lower():find("triple")
+        or v.Name:lower():find("hatch") then
+            continue
         end
+
+        if v:IsA("Model") or v:IsA("Folder") then
+            v:Destroy()
+        end
+    end
+
+    -- ⭐ Create dummy model so triple hatch stays enabled
+    if not eggsFolder:FindFirstChild("DummyAnimation") then
+        local dummy = Instance.new("Model")
+        dummy.Name = "DummyAnimation"
+        dummy.Parent = eggsFolder
     end
 end)
 
@@ -397,45 +408,4 @@ end)
 local btns = serv:Channel("Settings")
 
 btns:Toggle("Shadows",false,function(bool)
-    game.Lighting.GlobalShadows = bool
-end)
-
-btns:Seperator()
-
-btns:Slider("Lighting Brightness!",0,200,0,function(t)
-    game.Lighting.Brightness = t
-end)
-
-btns:Seperator()
-
-btns:Slider("Exposure!",0,200,0,function(t)
-    game.Lighting.ExposureCompensation = t
-end)
-
-btns:Seperator()
-
-btns:Colorpicker("Ambient",Color3.fromRGB(255,255,255),function(t)
-    game.Lighting.Ambient = t
-end)
-
-btns:Seperator()
-
-btns:Textbox("Time","Can Only Be Numbers!",true,function(t)
-    game.Lighting.TimeOfDay = t
-end)
-
-------------------------------------------------------------
--- IMPORTANT
-------------------------------------------------------------
-
-local btns = serv:Channel("Important!")
-
-btns:Button("Discord Server",function()
-    DiscordLib:Notification("Notification","You will be prompted a discord invite.","Okay!")
-end)
-
-btns:Seperator()
-
-btns:Button("Owner + Scripter",function()
-    if setclipboard then setclipboard("sunken#0001") end
-end)
+    game.L

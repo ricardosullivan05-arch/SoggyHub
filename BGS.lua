@@ -2,7 +2,7 @@ local DiscordLib = loadstring(game:HttpGet"https://raw.githubusercontent.com/daw
 
 local win = DiscordLib:Window("Soggy Hub ")
 
-local serv = win:Server("BGS V1.1", "")
+local serv = win:Server("BGS V1.2", "")
 
 ------------------------------------------------------------
 -- MAIN
@@ -153,7 +153,7 @@ btns:Toggle("Toggle Events",false, function(bool)
 end)
 
 ------------------------------------------------------------
--- EGGS (FULLY FIXED + MODERNIZED)
+-- EGGS (FULLY FIXED + MODERNIZED + TRIPLE R)
 ------------------------------------------------------------
 
 local btns = serv:Channel("Eggs")
@@ -180,15 +180,17 @@ btns:Dropdown("Choose Egg", eggs, function(option)
     SelectedEgg = option
 end)
 
--- KEYBINDS
+-- KEYBINDS (T + R)
 UIS.InputBegan:Connect(function(input, gp)
     if gp then return end
 
+    -- T = Auto Hatch toggle (TRIPLE)
     if input.KeyCode == Enum.KeyCode.T then
         autoHatch = not autoHatch
         DiscordLib:Notification("Auto Hatch", autoHatch and "Enabled" or "Disabled", "OK")
     end
 
+    -- R = ALWAYS triple hatch
     if input.KeyCode == Enum.KeyCode.R then
         if SelectedEgg then
             ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg, "Multi")
@@ -200,14 +202,17 @@ end)
 RunService.Heartbeat:Connect(function()
     if not SelectedEgg then return end
 
+    -- Auto Hatch (T) → TRIPLE hatch
     if autoHatch then
-        ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg)
+        ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg, "Multi")
     end
 
+    -- GUI Single Hatch toggle
     if singleHatch then
         ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg)
     end
 
+    -- GUI Triple Hatch toggle
     if tripleHatch then
         ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg, "Multi")
     end

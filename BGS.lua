@@ -1,7 +1,7 @@
 local DiscordLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/discord%20lib.txt"))()
 
 local win = DiscordLib:Window("Soggy Hub")
-local serv = win:Server("BGS V1.3", "")
+local serv = win:Server("BGS V1.4", "")
 
 ------------------------------------------------------------
 -- MAIN
@@ -282,4 +282,324 @@ btns:Button("Remove Egg Animation",function()
     end
 end)
 
-btns:Seperator
+btns:Seperator()
+
+btns:Button("Stats Counter",function()
+    game.Players.LocalPlayer.PlayerGui.ScreenGui.MobileStats.Visible = true
+end)
+
+------------------------------------------------------------
+-- WORLDS
+------------------------------------------------------------
+
+local btns = serv:Channel("Worlds")
+
+btns:Seperator()
+btns:Button("Floating World",function()
+    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","The Floating Island")
+end)
+
+btns:Seperator()
+btns:Button("Event World",function()
+    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("Teleport","EventSpawn")
+end)
+
+btns:Seperator()
+btns:Button("Space World",function()
+    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","Space")
+end)
+
+btns:Seperator()
+btns:Button("Twilight World",function()
+    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","The Twilight")
+end)
+
+btns:Seperator()
+btns:Button("Skylands World",function()
+    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","The Skylands")
+end)
+
+btns:Seperator()
+btns:Button("Zen World",function()
+    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","Zen")
+end)
+
+btns:Seperator()
+btns:Button("Void World",function()
+    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","The Void")
+end)
+
+btns:Seperator()
+btns:Button("XP World",function()
+    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint","XP Island")
+end)
+
+btns:Seperator()
+btns:Button("Candy World",function()
+    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("Teleport","Candy LandSpawn")
+end)
+
+------------------------------------------------------------
+-- MISC
+------------------------------------------------------------
+
+local btns = serv:Channel("Misc")
+
+btns:Toggle("Hide Name",false,function(bool)
+    game.Players.LocalPlayer.Name = "Anonymous"
+    game.Players.LocalPlayer.DisplayName = "Anonymous"
+    game.Players.LocalPlayer.Character.Head.CustomPlayerTag.Enabled = false
+end)
+
+------------------------------------------------------------
+-- PLAYER
+------------------------------------------------------------
+
+local btns = serv:Channel("Player")
+
+btns:Seperator()
+btns:Slider("Walkspeed!",20,200,0,function(t)
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = t
+end)
+
+btns:Seperator()
+btns:Slider("JumpPower!",20,500,0,function(t)
+    game.Players.LocalPlayer.Character.Humanoid.JumpPower = t
+end)
+
+btns:Seperator()
+btns:Toggle("GodMode",false,function(bool)
+end)
+
+btns:Seperator()
+btns:Toggle("Infinite Jump",false,function(bool)
+end)
+
+------------------------------------------------------------
+-- SETTINGS
+------------------------------------------------------------
+
+local btns = serv:Channel("Settings")
+
+btns:Toggle("Shadows",false,function(bool)
+    game.Lighting.GlobalShadows = bool
+end)
+
+btns:Seperator()
+btns:Slider("Lighting Brightness!",0,200,0,function(t)
+    game.Lighting.Brightness = t
+end)
+
+btns:Seperator()
+btns:Slider("Exposure!",0,200,0,function(t)
+    game.Lighting.ExposureCompensation = t
+end)
+
+btns:Seperator()
+btns:Colorpicker("Ambient",Color3.fromRGB(255,255,255),function(t)
+    game.Lighting.Ambient = t
+end)
+
+btns:Seperator()
+btns:Textbox("Time","Can Only Be Numbers!",true,function(t)
+    game.Lighting.TimeOfDay = t
+end)
+
+------------------------------------------------------------
+-- IMPORTANT
+------------------------------------------------------------
+
+local btns = serv:Channel("Important!")
+
+btns:Button("Discord Server",function()
+    DiscordLib:Notification("Notification","You will be prompted a discord invite.","Okay!")
+end)
+
+btns:Seperator()
+
+btns:Button("Owner + Scripter",function()
+    if setclipboard then setclipboard("sunken#0001") end
+end)
+
+------------------------------------------------------------
+-- UPGRADES (NEW CHANNEL)
+------------------------------------------------------------
+
+local btns = serv:Channel("Upgrades")
+
+------------------------------------------------------------
+-- PET AUTOMATION
+------------------------------------------------------------
+
+btns:Seperator()
+btns:Label("Pet Automation")
+
+btns:Toggle("Auto Delete Pets",false,function(bool)
+    getgenv().AutoDelete = bool
+    task.spawn(function()
+        while AutoDelete do
+            task.wait(1)
+            for _,pet in pairs(game.Players.LocalPlayer.Pets:GetChildren()) do
+                if pet:FindFirstChild("Rarity") and pet.Rarity.Value <= 2 then
+                    game.ReplicatedStorage.NetworkRemoteEvent:FireServer("DeletePet",pet)
+                end
+            end
+        end
+    end)
+end)
+
+btns:Toggle("Auto Shiny Craft",false,function(bool)
+    getgenv().AutoShiny = bool
+    task.spawn(function()
+        while AutoShiny do
+            task.wait(2)
+            game.ReplicatedStorage.NetworkRemoteEvent:FireServer("CraftAllShiny")
+        end
+    end)
+end)
+
+btns:Toggle("Auto Equip Best",false,function(bool)
+    getgenv().AutoEquip = bool
+    task.spawn(function()
+        while AutoEquip do
+            task.wait(3)
+            game.ReplicatedStorage.NetworkRemoteEvent:FireServer("EquipBestPets")
+        end
+    end)
+end)
+
+------------------------------------------------------------
+-- EGG AUTOMATION
+------------------------------------------------------------
+
+btns:Seperator()
+btns:Label("Egg Automation")
+
+btns:Toggle("Secret Pet Notifier",false,function(bool)
+    getgenv().SecretNotify = bool
+    task.spawn(function()
+        while SecretNotify do
+            task.wait()
+            for _,v in pairs(game.Players.LocalPlayer.PlayerGui.HatchGui:GetChildren()) do
+                if v:IsA("TextLabel") and v.Text:find("Secret") then
+                    DiscordLib:Notification("SECRET HATCHED!",v.Text,"OMG!")
+                end
+            end
+        end
+    end)
+end)
+
+btns:Toggle("Webhook Hatch Logs",false,function(bool)
+    getgenv().Webhook = bool
+    local url = "YOUR_WEBHOOK_URL_HERE"
+    task.spawn(function()
+        while Webhook do
+            task.wait()
+            for _,v in pairs(game.Players.LocalPlayer.PlayerGui.HatchGui:GetChildren()) do
+                if v:IsA("TextLabel") then
+                    syn.request({
+                        Url = url,
+                        Method = "POST",
+                        Headers = {["Content-Type"] = "application/json"},
+                        Body = game:GetService("HttpService"):JSONEncode({content = v.Text})
+                    })
+                end
+            end
+        end
+    end)
+end)
+
+btns:Toggle("Egg Luck Tracker",false,function(bool)
+    getgenv().LuckTrack = bool
+    local count = 0
+    task.spawn(function()
+        while LuckTrack do
+            task.wait()
+            for _,v in pairs(game.Players.LocalPlayer.PlayerGui.HatchGui:GetChildren()) do
+                if v:IsA("TextLabel") then
+                    count = count + 1
+                end
+            end
+        end
+    end)
+end)
+
+------------------------------------------------------------
+-- PERFORMANCE BOOSTERS
+------------------------------------------------------------
+
+btns:Seperator()
+btns:Label("Performance Boosters")
+
+btns:Toggle("FPS Boost Mode",false,function(bool)
+    if bool then
+        for _,v in pairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.Material = Enum.Material.SmoothPlastic
+            end
+        end
+        game.Lighting.GlobalShadows = false
+    else
+        game.Lighting.GlobalShadows = true
+    end
+end)
+
+btns:Toggle("Anti-Lag World Cleaner",false,function(bool)
+    if bool then
+        for _,v in pairs(workspace:GetChildren()) do
+            if v.Name:find("Particles") or v.Name:find("Effects") then
+                v:Destroy()
+            end
+        end
+    end
+end)
+
+------------------------------------------------------------
+-- REWARD AUTOMATION
+------------------------------------------------------------
+
+btns:Seperator()
+btns:Label("Rewards Automation")
+
+btns:Toggle("Auto Bubble Rewards",false,function(bool)
+    getgenv().BubbleRewards = bool
+    task.spawn(function()
+        while BubbleRewards do
+            task.wait(3)
+            game.ReplicatedStorage.NetworkRemoteEvent:FireServer("ClaimBubbleRewards")
+        end
+    end)
+end)
+
+btns:Toggle("Auto Gift Rewards",false,function(bool)
+    getgenv().GiftRewards = bool
+    task.spawn(function()
+        while GiftRewards do
+            task.wait(5)
+            game.ReplicatedStorage.NetworkRemoteEvent:FireServer("ClaimGiftRewards")
+        end
+    end)
+end)
+
+btns:Toggle("Auto Season Pass",false,function(bool)
+    getgenv().SeasonPass = bool
+    task.spawn(function()
+        while SeasonPass do
+            task.wait(5)
+            game.ReplicatedStorage.NetworkRemoteEvent:FireServer("ClaimSeasonPassRewards")
+        end
+    end)
+end)
+
+------------------------------------------------------------
+-- POTIONS & ENCHANTS
+------------------------------------------------------------
+
+btns:Seperator()
+btns:Label("Potions & Enchants")
+
+btns:Toggle("Auto Potion Use",false,function(bool)
+    getgenv().AutoPotion = bool
+    task.spawn(function()
+        while AutoPotion do
+            task

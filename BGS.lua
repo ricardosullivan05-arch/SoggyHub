@@ -2,7 +2,7 @@ local DiscordLib = loadstring(game:HttpGet"https://raw.githubusercontent.com/daw
 
 local win = DiscordLib:Window("Soggy Hub ")
 
-local serv = win:Server("BGS V1.2", "")
+local serv = win:Server("BGS V1.1", "")
 
 ------------------------------------------------------------
 -- MAIN
@@ -213,34 +213,4 @@ RunService.Heartbeat:Connect(function()
     end
 
     -- GUI Triple Hatch toggle
-    if tripleHatch then
-        ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg, "Multi")
-    end
-end)
-
--- GUI Toggles
-btns:Toggle("Auto Hatch (T)", false, function(state)
-    autoHatch = state
-end)
-
-btns:Toggle("Single Hatch", false, function(state)
-    singleHatch = state
-end)
-
-btns:Toggle("Triple Hatch", false, function(state)
-    tripleHatch = state
-end)
-
-btns:Seperator()
-
-btns:Button("Remove Egg Animation", function()
-    if ReplicatedStorage.Assets:FindFirstChild("Eggs") then
-        ReplicatedStorage.Assets.Eggs:Destroy()
-    end
-end)
-
-btns:Seperator()
-
-btns:Button("Stats Counter", function()
-    game.Players.LocalPlayer.PlayerGui.ScreenGui.MobileStats.Visible = true
-end)
+    if triple

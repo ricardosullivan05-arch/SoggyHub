@@ -1,19 +1,20 @@
 -- Soggy Hub – BGS V1.4 (Upgraded Edition)
+-- Save as: SoggyHub/BGS.lua
 
 local DiscordLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/discord%20lib.txt"))()
 
-local win = DiscordLib:Window("Soggy Hub")
+local win  = DiscordLib:Window("Soggy Hub")
 local serv = win:Server("BGS V1.4", "")
 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Players           = game:GetService("Players")
+local LocalPlayer       = Players.LocalPlayer
+local Character         = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart  = Character:WaitForChild("HumanoidRootPart")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UIS = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
-local Lighting = game:GetService("Lighting")
+local UIS               = game:GetService("UserInputService")
+local RunService        = game:GetService("RunService")
+local HttpService       = game:GetService("HttpService")
+local Lighting          = game:GetService("Lighting")
 
 ------------------------------------------------------------
 -- MAIN
@@ -155,7 +156,7 @@ do
         task.spawn(function()
             while getgenv().AutoCodes do
                 task.wait()
-                -- add code redeem logic if you want
+                -- add code redeem logic here if you want
             end
         end)
     end)
@@ -187,11 +188,11 @@ end
 ------------------------------------------------------------
 
 local SelectedEgg = nil
-local autoHatch = false
+local autoHatch   = false
 local singleHatch = false
 local tripleHatch = false
-local singleegg = false
-local tripleeggs = false
+local singleegg   = false
+local tripleeggs  = false
 
 do
     local btns = serv:Channel("Eggs")
@@ -266,23 +267,45 @@ do
     end)
 end
 
--- keybinds for eggs
+------------------------------------------------------------
+-- KEYBINDS (R TOGGLE TRIPLE HATCH)
+------------------------------------------------------------
+
+local R_Toggle = false
+
 UIS.InputBegan:Connect(function(input, gp)
     if gp then return end
 
+    -- Toggle auto hatch with T
     if input.KeyCode == Enum.KeyCode.T then
         autoHatch = not autoHatch
         DiscordLib:Notification("Auto Hatch", autoHatch and "Enabled" or "Disabled", "OK")
     end
 
+    -- Toggle triple hatch with R
     if input.KeyCode == Enum.KeyCode.R then
-        if SelectedEgg then
-            ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg, "Multi")
+        R_Toggle = not R_Toggle
+
+        if R_Toggle then
+            DiscordLib:Notification("Triple Hatch", "R Toggle Enabled", "OK")
+            task.spawn(function()
+                while R_Toggle do
+                    if SelectedEgg then
+                        ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg, "Multi")
+                    end
+                    task.wait(0.1) -- fast & safe
+                end
+            end)
+        else
+            DiscordLib:Notification("Triple Hatch", "R Toggle Disabled", "OK")
         end
     end
 end)
 
--- hatch engine
+------------------------------------------------------------
+-- HATCH ENGINE
+------------------------------------------------------------
+
 RunService.Heartbeat:Connect(function()
     if not SelectedEgg then return end
 
@@ -441,7 +464,6 @@ do
 
     btns:Button("Discord Server", function()
         DiscordLib:Notification("Notification", "You will be prompted a discord invite.", "Okay!")
-        -- add invite logic if you want
     end)
 
     btns:Seperator()
@@ -507,7 +529,7 @@ do
     end)
 
     --------------------------------------------------------
-    -- Egg Automation / Notifications
+    -- Egg Automation & Notifications
     --------------------------------------------------------
 
     btns:Seperator()
@@ -532,7 +554,7 @@ do
 
     btns:Toggle("Webhook Hatch Logs", false, function(state)
         getgenv().WebhookHatchLogs = state
-        local url = "YOUR_WEBHOOK_URL_HERE" -- replace with your actual webhook
+        local url = "YOUR_WEBHOOK_URL_HERE" -- replace with your webhook
         task.spawn(function()
             while getgenv().WebhookHatchLogs do
                 task.wait()

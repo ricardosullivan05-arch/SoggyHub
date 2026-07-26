@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local Lighting = game:GetService("Lighting")
 
 ------------------------------------------------------------
 -- MAIN
@@ -76,10 +77,13 @@ do
         getgenv().AutoKnock = state
         task.spawn(function()
             while getgenv().AutoKnock do
-                for _, v in pairs(workspace:FindFirstChild("ChristmasMap") and workspace.ChristmasMap.Houses:GetChildren() or {}) do
-                    if v:FindFirstChild("Activation") and v.Activation:FindFirstChild("Active") and v.Activation.Active.Value then
-                        game.TweenService:Create(HumanoidRootPart, TweenInfo.new(3.5), {CFrame = v.Activation.Root.CFrame}):Play()
-                        task.wait(4.5)
+                local christmas = workspace:FindFirstChild("ChristmasMap")
+                if christmas and christmas:FindFirstChild("Houses") then
+                    for _, v in pairs(christmas.Houses:GetChildren()) do
+                        if v:FindFirstChild("Activation") and v.Activation:FindFirstChild("Active") and v.Activation.Active.Value then
+                            game.TweenService:Create(HumanoidRootPart, TweenInfo.new(3.5), {CFrame = v.Activation.Root.CFrame}):Play()
+                            task.wait(4.5)
+                        end
                     end
                 end
                 task.wait()
@@ -151,7 +155,7 @@ do
         task.spawn(function()
             while getgenv().AutoCodes do
                 task.wait()
-                -- put your codes logic here if you want
+                -- add code redeem logic if you want
             end
         end)
     end)
@@ -237,7 +241,7 @@ do
         for _, v in pairs(eggsFolder:GetChildren()) do
             local name = v.Name:lower()
             if name:find("multi") or name:find("triple") or name:find("hatch") then
-                -- keep actual hatch models
+                -- keep hatch models
             else
                 if v:IsA("Model") or v:IsA("Folder") then
                     v:Destroy()
@@ -387,12 +391,12 @@ do
 
     btns:Seperator()
     btns:Toggle("GodMode (placeholder)", false, function(state)
-        -- you can add your own godmode logic here
+        -- add godmode logic if you want
     end)
 
     btns:Seperator()
     btns:Toggle("Infinite Jump (placeholder)", false, function(state)
-        -- you can add your own infinite jump logic here
+        -- add infinite jump logic if you want
     end)
 end
 
@@ -402,7 +406,6 @@ end
 
 do
     local btns = serv:Channel("Settings")
-    local Lighting = game:GetService("Lighting")
 
     btns:Toggle("Shadows", true, function(state)
         Lighting.GlobalShadows = state
@@ -438,7 +441,7 @@ do
 
     btns:Button("Discord Server", function()
         DiscordLib:Notification("Notification", "You will be prompted a discord invite.", "Okay!")
-        -- you can add your invite logic here
+        -- add invite logic if you want
     end)
 
     btns:Seperator()
@@ -585,9 +588,9 @@ do
                     v.Material = Enum.Material.SmoothPlastic
                 end
             end
-            game.Lighting.GlobalShadows = false
+            Lighting.GlobalShadows = false
         else
-            game.Lighting.GlobalShadows = true
+            Lighting.GlobalShadows = true
         end
     end)
 

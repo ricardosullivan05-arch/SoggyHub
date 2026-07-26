@@ -1,693 +1,215 @@
--- Soggy Hub – BGS V1.4 (Upgraded Edition)
--- Save as: SoggyHub/BGS.lua
-
-local DiscordLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/discord%20lib.txt"))()
-
-local win  = DiscordLib:Window("Soggy Hub")
-local serv = win:Server("BGS V1.4", "")
-
-local Players           = game:GetService("Players")
-local LocalPlayer       = Players.LocalPlayer
-local Character         = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local HumanoidRootPart  = Character:WaitForChild("HumanoidRootPart")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UIS               = game:GetService("UserInputService")
-local RunService        = game:GetService("RunService")
-local HttpService       = game:GetService("HttpService")
-local Lighting          = game:GetService("Lighting")
+local DL=loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/discord%20lib.txt"))()
+local win=DL:Window("Soggy Hub");local serv=win:Server("BGS V1.4","")
+local plr=game:GetService("Players").LocalPlayer
+local char=plr.Character or plr.CharacterAdded:Wait()
+local hrp=char:WaitForChild("HumanoidRootPart")
+local rs=game:GetService("ReplicatedStorage")
+local uis=game:GetService("UserInputService")
+local run=game:GetService("RunService")
+local http=game:GetService("HttpService")
+local light=game:GetService("Lighting")
 
 ------------------------------------------------------------
 -- MAIN
 ------------------------------------------------------------
-
-do
-    local btns = serv:Channel("Main")
-
-    btns:Seperator()
-
-    btns:Toggle("Auto Bubbles", false, function(state)
-        getgenv().AutoBubbles = state
-        task.spawn(function()
-            while getgenv().AutoBubbles do
-                task.wait()
-                ReplicatedStorage.NetworkRemoteEvent:FireServer("BlowBubble")
-            end
-        end)
-    end)
-
-    btns:Seperator()
-
-    btns:Toggle("Auto Sell", false, function(state)
-        DiscordLib:Notification("Notification", "You must be near the sell", "Okay!")
-        getgenv().AutoSell = state
-        task.spawn(function()
-            while getgenv().AutoSell do
-                task.wait()
-                ReplicatedStorage.NetworkRemoteEvent:FireServer("SellBubble", "Sell")
-            end
-        end)
-    end)
-
-    btns:Seperator()
-
-    btns:Toggle("Auto Pickup Items", false, function(state)
-        getgenv().AutoPickup = state
-        task.spawn(function()
-            while getgenv().AutoPickup do
-                task.wait()
-                for _, pickup in pairs(workspace.Pickups:GetChildren()) do
-                    if pickup:IsA("MeshPart") and (HumanoidRootPart.Position - pickup.Position).Magnitude <= 50 then
-                        HumanoidRootPart.CFrame = pickup.CFrame
-                    end
-                end
-            end
-        end)
-    end)
+do local c=serv:Channel("Main")
+c:Toggle("Auto Bubbles",false,function(v)
+getgenv().ab=v;task.spawn(function()while getgenv().ab do task.wait() rs.NetworkRemoteEvent:FireServer("BlowBubble") end end)end)
+c:Toggle("Auto Sell",false,function(v)
+DL:Notification("Note","Be near sell","OK")
+getgenv().as=v;task.spawn(function()while getgenv().as do task.wait() rs.NetworkRemoteEvent:FireServer("SellBubble","Sell") end end)end)
+c:Toggle("Auto Pickup Items",false,function(v)
+getgenv().ap=v;task.spawn(function()while getgenv().ap do task.wait()for _,p in pairs(workspace.Pickups:GetChildren())do if p:IsA("MeshPart")and(hrp.Position-p.Position).Magnitude<=50 then hrp.CFrame=p.CFrame end end end end)end)
 end
 
 ------------------------------------------------------------
 -- EVENT FARMS
 ------------------------------------------------------------
-
-do
-    local btns = serv:Channel("Event Farms")
-
-    btns:Seperator()
-
-    btns:Toggle("Auto Farm Houses", false, function(state)
-        getgenv().AutoKnock = state
-        task.spawn(function()
-            while getgenv().AutoKnock do
-                local christmas = workspace:FindFirstChild("ChristmasMap")
-                if christmas and christmas:FindFirstChild("Houses") then
-                    for _, v in pairs(christmas.Houses:GetChildren()) do
-                        if v:FindFirstChild("Activation") and v.Activation:FindFirstChild("Active") and v.Activation.Active.Value then
-                            game.TweenService:Create(HumanoidRootPart, TweenInfo.new(3.5), {CFrame = v.Activation.Root.CFrame}):Play()
-                            task.wait(4.5)
-                        end
-                    end
-                end
-                task.wait()
-            end
-        end)
-    end)
+do local c=serv:Channel("Event Farms")
+c:Toggle("Auto Farm Houses",false,function(v)
+getgenv().akn=v;task.spawn(function()while getgenv().akn do local cm=workspace:FindFirstChild("ChristmasMap")
+if cm and cm:FindFirstChild("Houses") then for _,h in pairs(cm.Houses:GetChildren())do local a=h:FindFirstChild("Activation")
+if a and a:FindFirstChild("Active")and a.Active.Value then game.TweenService:Create(hrp,TweenInfo.new(3.5),{CFrame=a.Root.CFrame}):Play()task.wait(4.5)end end end task.wait()end end)end)
 end
 
 ------------------------------------------------------------
 -- QUESTS
 ------------------------------------------------------------
-
-do
-    local btns = serv:Channel("Quests And More + ")
-
-    btns:Toggle("Auto Quests", false, function(state)
-        getgenv().AutoQuests = state
-        task.spawn(function()
-            while getgenv().AutoQuests do
-                task.wait()
-                ReplicatedStorage.NetworkRemoteEvent:FireServer("ClaimShardQuestReward")
-                task.wait()
-                ReplicatedStorage.NetworkRemoteEvent:FireServer("GetShardQuest", "Hard")
-            end
-        end)
-    end)
-
-    btns:Seperator()
-
-    btns:Toggle("Auto Spin Wheel", false, function(state)
-        getgenv().AutoSpinWheel = state
-        task.spawn(function()
-            while getgenv().AutoSpinWheel do
-                task.wait()
-                ReplicatedStorage.NetworkRemoteEvent:FireServer("SpinToWin")
-            end
-        end)
-    end)
-
-    btns:Seperator()
-
-    btns:Toggle("Auto Chests", false, function(state)
-        getgenv().AutoChests = state
-        local chestList = {
-            "The Floating Island","The Twilight","XP Island","The Void","Atlantis",
-            "Underworld","Rainbow Land","Mystic Forest","Toy Land","Candy Land","Beach World"
-        }
-        task.spawn(function()
-            while getgenv().AutoChests do
-                for _, chest in ipairs(chestList) do
-                    ReplicatedStorage.NetworkRemoteEvent:FireServer("CollectChestReward", chest)
-                    task.wait(0.5)
-                end
-                task.wait(3)
-            end
-        end)
-    end)
+do local c=serv:Channel("Quests +")
+c:Toggle("Auto Quests",false,function(v)
+getgenv().aq=v;task.spawn(function()while getgenv().aq do task.wait()rs.NetworkRemoteEvent:FireServer("ClaimShardQuestReward")task.wait()rs.NetworkRemoteEvent:FireServer("GetShardQuest","Hard")end end)end)
+c:Toggle("Auto Spin Wheel",false,function(v)
+getgenv().sw=v;task.spawn(function()while getgenv().sw do task.wait()rs.NetworkRemoteEvent:FireServer("SpinToWin")end end)end)
+c:Toggle("Auto Chests",false,function(v)
+getgenv().ac=v;local L={"The Floating Island","The Twilight","XP Island","The Void","Atlantis","Underworld","Rainbow Land","Mystic Forest","Toy Land","Candy Land","Beach World"}
+task.spawn(function()while getgenv().ac do for _,n in ipairs(L)do rs.NetworkRemoteEvent:FireServer("CollectChestReward",n)task.wait(.5)end task.wait(3)end end)end)
 end
 
 ------------------------------------------------------------
 -- CODES + EVENTS
 ------------------------------------------------------------
-
-do
-    local btns = serv:Channel("Codes + Events")
-
-    btns:Toggle("Redeem Codes (placeholder)", false, function(state)
-        getgenv().AutoCodes = state
-        task.spawn(function()
-            while getgenv().AutoCodes do
-                task.wait()
-                -- add code redeem logic here if you want
-            end
-        end)
-    end)
-
-    btns:Seperator()
-
-    btns:Toggle("Toggle Events", false, function(state)
-        getgenv().EventsToggle = state
-        task.spawn(function()
-            while getgenv().EventsToggle do
-                task.wait()
-                local assets = ReplicatedStorage:FindFirstChild("Assets")
-                if assets and assets:FindFirstChild("Modules") then
-                    local modules = assets.Modules
-                    if modules:FindFirstChild("Is2xSpeedEnabled") and modules.Is2xSpeedEnabled:FindFirstChild("Enabled") then
-                        modules.Is2xSpeedEnabled.Enabled.Value = true
-                    end
-                    if modules:FindFirstChild("Is2xLuckEnabled") then
-                        modules.Is2xLuckEnabled.Value = true
-                    end
-                end
-            end
-        end)
-    end)
+do local c=serv:Channel("Codes + Events")
+c:Toggle("Toggle Events",false,function(v)
+getgenv().et=v;task.spawn(function()while getgenv().et do task.wait()local a=rs:FindFirstChild("Assets")
+if a and a:FindFirstChild("Modules")then local m=a.Modules;if m:FindFirstChild("Is2xSpeedEnabled")then m.Is2xSpeedEnabled.Enabled.Value=true end;if m:FindFirstChild("Is2xLuckEnabled")then m.Is2xLuckEnabled.Value=true end end end end)end)
 end
 
 ------------------------------------------------------------
 -- EGGS
 ------------------------------------------------------------
+local egg=nil;local ah=false;local sh=false;local th=false;local se=false;local te=false
+do local c=serv:Channel("Eggs")
+local ef=workspace:WaitForChild("Eggs");local list={}
+for _,e in pairs(ef:GetChildren())do table.insert(list,e.Name)end
+c:Dropdown("Choose Egg",list,function(v)egg=v end)
+c:Toggle("Auto Hatch (T)",false,function(v)ah=v end)
+c:Toggle("Single Hatch",false,function(v)sh=v end)
+c:Toggle("Triple Hatch",false,function(v)th=v end)
+c:Toggle("Open Selected Egg",false,function(v)se=v end)
+c:Toggle("Triple Open Selected Egg",false,function(v)te=v end)
 
-local SelectedEgg = nil
-local autoHatch   = false
-local singleHatch = false
-local tripleHatch = false
-local singleegg   = false
-local tripleeggs  = false
+-- FIXED REMOVE ANIMATION
+c:Button("Remove Egg Animation",function()
+local a=rs:FindFirstChild("Assets");if not a then return end
+local f=a:FindFirstChild("Eggs");if not f then return end
+for _,v in pairs(f:GetChildren())do local n=v.Name:lower()
+if n:find("multi")or n:find("triple")or n:find("hatch")or n:find("root")then continue end
+if v:IsA("Model")or v:IsA("Folder")then v:Destroy()end end
+if not f:FindFirstChild("DummyAnimation")then local d=Instance.new("Model")d.Name="DummyAnimation"d.Parent=f end
+DL:Notification("Egg Animation","Removed safely","OK")
+end)
 
-do
-    local btns = serv:Channel("Eggs")
-
-    local EggsFolder = workspace:WaitForChild("Eggs")
-
-    local eggs = {}
-    for _, egg in pairs(EggsFolder:GetChildren()) do
-        table.insert(eggs, egg.Name)
-    end
-
-    btns:Seperator()
-
-    btns:Dropdown("Choose Egg", eggs, function(option)
-        SelectedEgg = option
-    end)
-
-    btns:Toggle("Auto Hatch (T)", false, function(state)
-        autoHatch = state
-    end)
-
-    btns:Toggle("Single Hatch", false, function(state)
-        singleHatch = state
-    end)
-
-    btns:Toggle("Triple Hatch", false, function(state)
-        tripleHatch = state
-    end)
-
-    btns:Toggle("Open Selected Egg", false, function(state)
-        singleegg = state
-    end)
-
-    btns:Toggle("Triple Open Selected Egg", false, function(state)
-        tripleeggs = state
-    end)
-
-    btns:Seperator()
-
-    btns:Button("Remove Egg Animation", function()
-        local assets = ReplicatedStorage:FindFirstChild("Assets")
-        if not assets then return end
-
-        local eggsFolder = assets:FindFirstChild("Eggs")
-        if not eggsFolder then return end
-
-        for _, v in pairs(eggsFolder:GetChildren()) do
-            local name = v.Name:lower()
-            if name:find("multi") or name:find("triple") or name:find("hatch") then
-                -- keep hatch models
-            else
-                if v:IsA("Model") or v:IsA("Folder") then
-                    v:Destroy()
-                end
-            end
-        end
-
-        if not eggsFolder:FindFirstChild("DummyAnimation") then
-            local dummy = Instance.new("Model")
-            dummy.Name = "DummyAnimation"
-            dummy.Parent = eggsFolder
-        end
-    end)
-
-    btns:Seperator()
-
-    btns:Button("Stats Counter", function()
-        local gui = LocalPlayer:FindFirstChild("PlayerGui")
-        if gui and gui:FindFirstChild("ScreenGui") and gui.ScreenGui:FindFirstChild("MobileStats") then
-            gui.ScreenGui.MobileStats.Visible = true
-        end
-    end)
+c:Button("Stats Counter",function()
+local g=plr:FindFirstChild("PlayerGui")
+if g and g:FindFirstChild("ScreenGui")and g.ScreenGui:FindFirstChild("MobileStats")then g.ScreenGui.MobileStats.Visible=true end end)
 end
 
 ------------------------------------------------------------
 -- KEYBINDS (R TOGGLE TRIPLE HATCH)
 ------------------------------------------------------------
-
-local R_Toggle = false
-
-UIS.InputBegan:Connect(function(input, gp)
-    if gp then return end
-
-    -- Toggle auto hatch with T
-    if input.KeyCode == Enum.KeyCode.T then
-        autoHatch = not autoHatch
-        DiscordLib:Notification("Auto Hatch", autoHatch and "Enabled" or "Disabled", "OK")
-    end
-
-    -- Toggle triple hatch with R
-    if input.KeyCode == Enum.KeyCode.R then
-        R_Toggle = not R_Toggle
-
-        if R_Toggle then
-            DiscordLib:Notification("Triple Hatch", "R Toggle Enabled", "OK")
-            task.spawn(function()
-                while R_Toggle do
-                    if SelectedEgg then
-                        ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg, "Multi")
-                    end
-                    task.wait(0.1) -- fast & safe
-                end
-            end)
-        else
-            DiscordLib:Notification("Triple Hatch", "R Toggle Disabled", "OK")
-        end
-    end
+local rt=false
+uis.InputBegan:Connect(function(i,gp)
+if gp then return end
+if i.KeyCode==Enum.KeyCode.T then ah=not ah;DL:Notification("Auto Hatch",ah and"Enabled"or"Disabled","OK")end
+if i.KeyCode==Enum.KeyCode.R then
+rt=not rt
+if rt then
+DL:Notification("Triple Hatch","R Enabled","OK")
+task.spawn(function()while rt do if egg then rs.NetworkRemoteEvent:FireServer("PurchaseEgg",egg,"Multi")end task.wait(.1)end end)
+else DL:Notification("Triple Hatch","R Disabled","OK")end
+end
 end)
 
 ------------------------------------------------------------
 -- HATCH ENGINE
 ------------------------------------------------------------
-
-RunService.Heartbeat:Connect(function()
-    if not SelectedEgg then return end
-
-    if autoHatch then
-        ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg, "Multi")
-    end
-
-    if singleHatch then
-        ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg)
-    end
-
-    if tripleHatch then
-        ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg, "Multi")
-    end
-
-    if singleegg then
-        ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg)
-    end
-
-    if tripleeggs then
-        ReplicatedStorage.NetworkRemoteEvent:FireServer("PurchaseEgg", SelectedEgg, "Multi")
-    end
+run.Heartbeat:Connect(function()
+if not egg then return end
+if ah then rs.NetworkRemoteEvent:FireServer("PurchaseEgg",egg,"Multi")end
+if sh then rs.NetworkRemoteEvent:FireServer("PurchaseEgg",egg)end
+if th then rs.NetworkRemoteEvent:FireServer("PurchaseEgg",egg,"Multi")end
+if se then rs.NetworkRemoteEvent:FireServer("PurchaseEgg",egg)end
+if te then rs.NetworkRemoteEvent:FireServer("PurchaseEgg",egg,"Multi")end
 end)
 
 ------------------------------------------------------------
 -- WORLDS
 ------------------------------------------------------------
-
-do
-    local btns = serv:Channel("Worlds")
-
-    local function tpCheckpoint(name)
-        ReplicatedStorage.NetworkRemoteEvent:FireServer("TeleportToCheckpoint", name)
-    end
-
-    btns:Seperator()
-    btns:Button("Floating World", function() tpCheckpoint("The Floating Island") end)
-
-    btns:Seperator()
-    btns:Button("Event World", function()
-        ReplicatedStorage.NetworkRemoteEvent:FireServer("Teleport", "EventSpawn")
-    end)
-
-    btns:Seperator()
-    btns:Button("Space World", function() tpCheckpoint("Space") end)
-
-    btns:Seperator()
-    btns:Button("Twilight World", function() tpCheckpoint("The Twilight") end)
-
-    btns:Seperator()
-    btns:Button("Skylands World", function() tpCheckpoint("The Skylands") end)
-
-    btns:Seperator()
-    btns:Button("Zen World", function() tpCheckpoint("Zen") end)
-
-    btns:Seperator()
-    btns:Button("Void World", function() tpCheckpoint("The Void") end)
-
-    btns:Seperator()
-    btns:Button("XP World", function() tpCheckpoint("XP Island") end)
-
-    btns:Seperator()
-    btns:Button("Candy World", function()
-        ReplicatedStorage.NetworkRemoteEvent:FireServer("Teleport", "Candy LandSpawn")
-    end)
+do local c=serv:Channel("Worlds")
+local tp=function(n)rs.NetworkRemoteEvent:FireServer("TeleportToCheckpoint",n)end
+c:Button("Floating World",function()tp("The Floating Island")end)
+c:Button("Event World",function()rs.NetworkRemoteEvent:FireServer("Teleport","EventSpawn")end)
+c:Button("Space World",function()tp("Space")end)
+c:Button("Twilight World",function()tp("The Twilight")end)
+c:Button("Skylands World",function()tp("The Skylands")end)
+c:Button("Zen World",function()tp("Zen")end)
+c:Button("Void World",function()tp("The Void")end)
+c:Button("XP World",function()tp("XP Island")end)
+c:Button("Candy World",function()rs.NetworkRemoteEvent:FireServer("Teleport","Candy LandSpawn")end)
 end
 
 ------------------------------------------------------------
 -- MISC
 ------------------------------------------------------------
-
-do
-    local btns = serv:Channel("Misc")
-
-    btns:Toggle("Hide Name", false, function(state)
-        if state then
-            LocalPlayer.Name = "Anonymous"
-            LocalPlayer.DisplayName = "Anonymous"
-            if Character:FindFirstChild("Head") and Character.Head:FindFirstChild("CustomPlayerTag") then
-                Character.Head.CustomPlayerTag.Enabled = false
-            end
-        end
-    end)
+do local c=serv:Channel("Misc")
+c:Toggle("Hide Name",false,function(v)
+if v then plr.Name="Anonymous";plr.DisplayName="Anonymous"
+local h=char:FindFirstChild("Head")
+if h and h:FindFirstChild("CustomPlayerTag")then h.CustomPlayerTag.Enabled=false end end end)
 end
 
 ------------------------------------------------------------
 -- PLAYER
 ------------------------------------------------------------
-
-do
-    local btns = serv:Channel("Player")
-
-    btns:Seperator()
-    btns:Slider("Walkspeed!", 20, 200, 16, function(value)
-        if Character:FindFirstChild("Humanoid") then
-            Character.Humanoid.WalkSpeed = value
-        end
-    end)
-
-    btns:Seperator()
-    btns:Slider("JumpPower!", 20, 500, 50, function(value)
-        if Character:FindFirstChild("Humanoid") then
-            Character.Humanoid.JumpPower = value
-        end
-    end)
-
-    btns:Seperator()
-    btns:Toggle("GodMode (placeholder)", false, function(state)
-        -- add godmode logic if you want
-    end)
-
-    btns:Seperator()
-    btns:Toggle("Infinite Jump (placeholder)", false, function(state)
-        -- add infinite jump logic if you want
-    end)
+do local c=serv:Channel("Player")
+c:Slider("Walkspeed!",20,200,16,function(v)if char:FindFirstChild("Humanoid")then char.Humanoid.WalkSpeed=v end end)
+c:Slider("JumpPower!",20,500,50,function(v)if char:FindFirstChild("Humanoid")then char.Humanoid.JumpPower=v end end)
 end
 
 ------------------------------------------------------------
 -- SETTINGS
 ------------------------------------------------------------
-
-do
-    local btns = serv:Channel("Settings")
-
-    btns:Toggle("Shadows", true, function(state)
-        Lighting.GlobalShadows = state
-    end)
-
-    btns:Seperator()
-    btns:Slider("Lighting Brightness!", 0, 10, Lighting.Brightness, function(value)
-        Lighting.Brightness = value
-    end)
-
-    btns:Seperator()
-    btns:Slider("Exposure!", -5, 5, Lighting.ExposureCompensation, function(value)
-        Lighting.ExposureCompensation = value
-    end)
-
-    btns:Seperator()
-    btns:Colorpicker("Ambient", Lighting.Ambient, function(color)
-        Lighting.Ambient = color
-    end)
-
-    btns:Seperator()
-    btns:Textbox("Time", "Can Only Be Numbers!", true, function(text)
-        Lighting.TimeOfDay = text
-    end)
-end
-
-------------------------------------------------------------
--- IMPORTANT
-------------------------------------------------------------
-
-do
-    local btns = serv:Channel("Important!")
-
-    btns:Button("Discord Server", function()
-        DiscordLib:Notification("Notification", "You will be prompted a discord invite.", "Okay!")
-    end)
-
-    btns:Seperator()
-
-    btns:Button("Owner + Scripter", function()
-        if setclipboard then
-            setclipboard("sunken#0001")
-        end
-        DiscordLib:Notification("Copied", "sunken#0001 copied to clipboard", "Nice")
-    end)
+do local c=serv:Channel("Settings")
+c:Toggle("Shadows",true,function(v)light.GlobalShadows=v end)
+c:Slider("Brightness",0,10,light.Brightness,function(v)light.Brightness=v end)
+c:Slider("Exposure",-5,5,light.ExposureCompensation,function(v)light.ExposureCompensation=v end)
+c:Colorpicker("Ambient",light.Ambient,function(v)light.Ambient=v end)
+c:Textbox("Time","Numbers only",true,function(v)light.TimeOfDay=v end)
 end
 
 ------------------------------------------------------------
 -- UPGRADES
 ------------------------------------------------------------
+do local c=serv:Channel("Upgrades")
 
-do
-    local btns = serv:Channel("Upgrades")
+-- Auto Delete Pets
+c:Toggle("Auto Delete Pets",false,function(v)
+getgenv().adp=v;task.spawn(function()while getgenv().adp do task.wait(1)
+local pf=plr:FindFirstChild("Pets")
+if pf then for _,p in pairs(pf:GetChildren())do local r=p:FindFirstChild("Rarity")
+if r and r.Value<=2 then rs.NetworkRemoteEvent:FireServer("DeletePet",p)end end end end end)end)
 
-    --------------------------------------------------------
-    -- Pet Automation
-    --------------------------------------------------------
+-- Auto Shiny Craft
+c:Toggle("Auto Shiny Craft",false,function(v)
+getgenv().asc=v;task.spawn(function()while getgenv().asc do task.wait(2)rs.NetworkRemoteEvent:FireServer("CraftAllShiny")end end)end)
 
-    btns:Seperator()
-    btns:Label("Pet Automation")
+-- Auto Equip Best
+c:Toggle("Auto Equip Best",false,function(v)
+getgenv().aeb=v;task.spawn(function()while getgenv().aeb do task.wait(3)rs.NetworkRemoteEvent:FireServer("EquipBestPets")end end)end)
 
-    btns:Toggle("Auto Delete Pets (low rarity)", false, function(state)
-        getgenv().AutoDeletePets = state
-        task.spawn(function()
-            while getgenv().AutoDeletePets do
-                task.wait(1)
-                local petsFolder = LocalPlayer:FindFirstChild("Pets")
-                if petsFolder then
-                    for _, pet in pairs(petsFolder:GetChildren()) do
-                        local rarity = pet:FindFirstChild("Rarity")
-                        if rarity and rarity.Value <= 2 then
-                            ReplicatedStorage.NetworkRemoteEvent:FireServer("DeletePet", pet)
-                        end
-                    end
-                end
-            end
-        end)
-    end)
+-- Secret Pet Notifier
+c:Toggle("Secret Pet Notifier",false,function(v)
+getgenv().spn=v;task.spawn(function()while getgenv().spn do task.wait()
+local g=plr:FindFirstChild("PlayerGui")
+if g and g:FindFirstChild("HatchGui")then for _,t in pairs(g.HatchGui:GetChildren())do
+if t:IsA("TextLabel")and t.Text:lower():find("secret")then DL:Notification("SECRET!!",t.Text,"OMG")end end end end end)end)
 
-    btns:Toggle("Auto Shiny Craft", false, function(state)
-        getgenv().AutoShinyCraft = state
-        task.spawn(function()
-            while getgenv().AutoShinyCraft do
-                task.wait(2)
-                ReplicatedStorage.NetworkRemoteEvent:FireServer("CraftAllShiny")
-            end
-        end)
-    end)
+-- FPS Boost
+c:Toggle("FPS Boost",false,function(v)
+if v then for _,o in pairs(workspace:GetDescendants())do if o:IsA("BasePart")then o.Material=Enum.Material.SmoothPlastic end end light.GlobalShadows=false
+else light.GlobalShadows=true end end)
 
-    btns:Toggle("Auto Equip Best", false, function(state)
-        getgenv().AutoEquipBest = state
-        task.spawn(function()
-            while getgenv().AutoEquipBest do
-                task.wait(3)
-                ReplicatedStorage.NetworkRemoteEvent:FireServer("EquipBestPets")
-            end
-        end)
-    end)
+-- Anti-Lag
+c:Toggle("Anti-Lag",false,function(v)
+if v then for _,o in pairs(workspace:GetChildren())do local n=o.Name:lower()
+if n:find("particles")or n:find("effects")or n:find("sparkles")then o:Destroy()end end end end)
 
-    --------------------------------------------------------
-    -- Egg Automation & Notifications
-    --------------------------------------------------------
+-- Rewards
+c:Toggle("Auto Bubble Rewards",false,function(v)
+getgenv().abr=v;task.spawn(function()while getgenv().abr do task.wait(3)rs.NetworkRemoteEvent:FireServer("ClaimBubbleRewards")end end)end)
 
-    btns:Seperator()
-    btns:Label("Egg Automation & Notifications")
+c:Toggle("Auto Gift Rewards",false,function(v)
+getgenv().agr=v;task.spawn(function()while getgenv().agr do task.wait(5)rs.NetworkRemoteEvent:FireServer("ClaimGiftRewards")end end)end)
 
-    btns:Toggle("Secret Pet Notifier", false, function(state)
-        getgenv().SecretPetNotifier = state
-        task.spawn(function()
-            while getgenv().SecretPetNotifier do
-                task.wait()
-                local gui = LocalPlayer:FindFirstChild("PlayerGui")
-                if gui and gui:FindFirstChild("HatchGui") then
-                    for _, v in pairs(gui.HatchGui:GetChildren()) do
-                        if v:IsA("TextLabel") and v.Text:lower():find("secret") then
-                            DiscordLib:Notification("SECRET HATCHED!", v.Text, "OMG!")
-                        end
-                    end
-                end
-            end
-        end)
-    end)
+c:Toggle("Auto Season Pass",false,function(v)
+getgenv().asp=v;task.spawn(function()while getgenv().asp do task.wait(5)rs.NetworkRemoteEvent:FireServer("ClaimSeasonPassRewards")end end)end)
 
-    btns:Toggle("Webhook Hatch Logs", false, function(state)
-        getgenv().WebhookHatchLogs = state
-        local url = "YOUR_WEBHOOK_URL_HERE" -- replace with your webhook
-        task.spawn(function()
-            while getgenv().WebhookHatchLogs do
-                task.wait()
-                local gui = LocalPlayer:FindFirstChild("PlayerGui")
-                if gui and gui:FindFirstChild("HatchGui") then
-                    for _, v in pairs(gui.HatchGui:GetChildren()) do
-                        if v:IsA("TextLabel") then
-                            local content = v.Text
-                            if syn and syn.request then
-                                syn.request({
-                                    Url = url,
-                                    Method = "POST",
-                                    Headers = {["Content-Type"] = "application/json"},
-                                    Body = HttpService:JSONEncode({content = content})
-                                })
-                            end
-                        end
-                    end
-                end
-            end
-        end)
-    end)
+-- Potions
+c:Toggle("Auto Potions",false,function(v)
+getgenv().apots=v;task.spawn(function()while getgenv().apots do task.wait(4)rs.NetworkRemoteEvent:FireServer("UseAllPotions")end end)end)
 
-    btns:Toggle("Egg Luck Tracker (simple counter)", false, function(state)
-        getgenv().EggLuckTracker = state
-        task.spawn(function()
-            local count = 0
-            while getgenv().EggLuckTracker do
-                task.wait()
-                local gui = LocalPlayer:FindFirstChild("PlayerGui")
-                if gui and gui:FindFirstChild("HatchGui") then
-                    for _, v in pairs(gui.HatchGui:GetChildren()) do
-                        if v:IsA("TextLabel") then
-                            count = count + 1
-                        end
-                    end
-                end
-            end
-        end)
-    end)
+-- Enchant
+c:Toggle("Auto Enchant",false,function(v)
+getgenv().ae=v;task.spawn(function()while getgenv().ae do task.wait(4)rs.NetworkRemoteEvent:FireServer("EnchantAllPets")end end)end)
 
-    --------------------------------------------------------
-    -- Performance Boosters
-    --------------------------------------------------------
-
-    btns:Seperator()
-    btns:Label("Performance Boosters")
-
-    btns:Toggle("FPS Boost Mode", false, function(state)
-        if state then
-            for _, v in pairs(workspace:GetDescendants()) do
-                if v:IsA("BasePart") then
-                    v.Material = Enum.Material.SmoothPlastic
-                end
-            end
-            Lighting.GlobalShadows = false
-        else
-            Lighting.GlobalShadows = true
-        end
-    end)
-
-    btns:Toggle("Anti-Lag World Cleaner", false, function(state)
-        if state then
-            for _, v in pairs(workspace:GetChildren()) do
-                local name = v.Name:lower()
-                if name:find("particles") or name:find("effects") or name:find("sparkles") then
-                    v:Destroy()
-                end
-            end
-        end
-    end)
-
-    --------------------------------------------------------
-    -- Rewards Automation
-    --------------------------------------------------------
-
-    btns:Seperator()
-    btns:Label("Rewards Automation")
-
-    btns:Toggle("Auto Bubble Rewards", false, function(state)
-        getgenv().AutoBubbleRewards = state
-        task.spawn(function()
-            while getgenv().AutoBubbleRewards do
-                task.wait(3)
-                ReplicatedStorage.NetworkRemoteEvent:FireServer("ClaimBubbleRewards")
-            end
-        end)
-    end)
-
-    btns:Toggle("Auto Gift Rewards", false, function(state)
-        getgenv().AutoGiftRewards = state
-        task.spawn(function()
-            while getgenv().AutoGiftRewards do
-                task.wait(5)
-                ReplicatedStorage.NetworkRemoteEvent:FireServer("ClaimGiftRewards")
-            end
-        end)
-    end)
-
-    btns:Toggle("Auto Season Pass", false, function(state)
-        getgenv().AutoSeasonPass = state
-        task.spawn(function()
-            while getgenv().AutoSeasonPass do
-                task.wait(5)
-                ReplicatedStorage.NetworkRemoteEvent:FireServer("ClaimSeasonPassRewards")
-            end
-        end)
-    end)
-
-    --------------------------------------------------------
-    -- Potions & Enchants
-    --------------------------------------------------------
-
-    btns:Seperator()
-    btns:Label("Potions & Enchants")
-
-    btns:Toggle("Auto Potion Use", false, function(state)
-        getgenv().AutoPotionUse = state
-        task.spawn(function()
-            while getgenv().AutoPotionUse do
-                task.wait(4)
-                ReplicatedStorage.NetworkRemoteEvent:FireServer("UseAllPotions")
-            end
-        end)
-    end)
-
-    btns:Toggle("Auto Enchant", false, function(state)
-        getgenv().AutoEnchantAll = state
-        task.spawn(function()
-            while getgenv().AutoEnchantAll do
-                task.wait(4)
-                ReplicatedStorage.NetworkRemoteEvent:FireServer("EnchantAllPets")
-            end
-        end)
-    end)
 end

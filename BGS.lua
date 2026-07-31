@@ -524,206 +524,222 @@ end)
 local btns = serv:Channel("Eggs")
 
 ----------------------------------------------------------------
--- UI BUTTON AUTO-HATCH
--- Detects and activates the game's Auto, Open 3, and Open 1 buttons.
+-- ORIGINAL EGG DETECTION + NEW AUTOMATIC HATCHING
 ----------------------------------------------------------------
 
 local Players = game:GetService("Players")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
+local EggRemote = ReplicatedStorage:WaitForChild("NetworkRemoteEvent")
 
-local function normalizeText(value)
-    return tostring(value or "")
-        :lower()
-        :gsub("%s+", "")
-        :gsub("[^%w]", "")
-end
+local eggs = {}
+local SelectedEgg = nil
+local AutoDetectEgg = true
 
-local function getButtonText(button)
-    local combinedText = ""
+local function refreshEggList()
+    table.clear(eggs)
 
-    if button:IsA("TextButton") then
-        combinedText = combinedText .. " " .. button.Text
+    local eggFolder = workspace:FindFirstChild("Eggs")
+    if not eggFolder then
+        return
     end
 
-    for _, child in ipairs(button:GetDescendants()) do
-        if child:IsA("TextLabel") or child:IsA("TextButton") then
-            combinedText = combinedText .. " " .. child.Text
+    for _, egg in ipairs(eggFolder:GetChildren()) do
+        table.insert(eggs, egg.Name)
+    end
+
+    table.sort(eggs)
+
+    if not SelectedEgg and #eggs > 0 then
+        SelectedEgg = eggs[1]
+    end
+end
+
+local function getObjectPosition(object)
+    if object:IsA("BasePart") then
+        return object.Position
+    end
+
+    if object:IsA("Model") then
+        local primaryPart = object.PrimaryPart
+            or object:FindFirstChild("Root")
+            or object:FindFirstChild("Main")
+            or object:FindFirstChildWhichIsA("BasePart", true)
+
+        if primaryPart then
+            return primaryPart.Position
+        end
+
+        local success, pivot = pcall(function()
+            return object:GetPivot()
+        end)
+
+        if success then
+            return pivot.Position
         end
     end
 
-    return normalizeText(combinedText)
+    local part = object:FindFirstChildWhichIsA("BasePart", true)
+    return part and part.Position or nil
 end
 
-local function isVisible(button)
-    if not button.Visible then
-        return false
+local function detectNearestEgg()
+    local character = LocalPlayer.Character
+    local root = character and character:FindFirstChild("HumanoidRootPart")
+    local eggFolder = workspace:FindFirstChild("Eggs")
+
+    if not root or not eggFolder then
+        return SelectedEgg
     end
 
-    local current = button.Parent
-    while current and current ~= LocalPlayer.PlayerGui do
-        if current:IsA("GuiObject") and not current.Visible then
-            return false
-        end
-        current = current.Parent
-    end
+    local nearestName = nil
+    local nearestDistance = math.huge
 
-    return true
-end
+    for _, egg in ipairs(eggFolder:GetChildren()) do
+        local position = getObjectPosition(egg)
 
-local function findHatchButton(buttonName)
-    local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-    if not playerGui then
-        return nil
-    end
+        if position then
+            local distance = (root.Position - position).Magnitude
 
-    local target = normalizeText(buttonName)
-
-    for _, object in ipairs(playerGui:GetDescendants()) do
-        if object:IsA("GuiButton") and isVisible(object) then
-            local objectName = normalizeText(object.Name)
-            local objectText = getButtonText(object)
-
-            if objectName == target
-                or objectText == target
-                or objectText:find(target, 1, true)
-            then
-                return object
+            if distance < nearestDistance then
+                nearestDistance = distance
+                nearestName = egg.Name
             end
         end
     end
 
-    return nil
+    -- Only automatically select an egg when the player is reasonably near it.
+    if nearestName and nearestDistance <= 35 then
+        SelectedEgg = nearestName
+    end
+
+    return SelectedEgg
 end
 
-local function activateButton(button)
-    if not button then
+local function getCurrentEgg()
+    if AutoDetectEgg then
+        return detectNearestEgg()
+    end
+
+    return SelectedEgg
+end
+
+local function hatchEgg(hatchType)
+    local eggName = getCurrentEgg()
+
+    if not eggName then
         return false
     end
 
-    -- Executor-supported signal activation.
-    if typeof(firesignal) == "function" then
-        pcall(function()
-            firesignal(button.Activated)
-        end)
+    ----------------------------------------------------------------
+    -- NEW REMOTE FORMAT
+    ----------------------------------------------------------------
+    local newArgs = {
+        Action = "PurchaseEgg",
+        EggName = eggName,
+        HatchType = hatchType
+    }
 
-        pcall(function()
-            firesignal(button.MouseButton1Click)
-        end)
+    local success = pcall(function()
+        EggRemote:FireServer(newArgs)
+    end)
 
+    if success then
         return true
     end
 
-    -- Fallback: activate connected callbacks directly.
-    if typeof(getconnections) == "function" then
-        local activated = false
-
-        for _, signal in ipairs({button.Activated, button.MouseButton1Click}) do
-            for _, connection in ipairs(getconnections(signal)) do
-                pcall(function()
-                    if connection.Fire then
-                        connection:Fire()
-                    elseif connection.Function then
-                        connection.Function()
-                    end
-                end)
-                activated = true
-            end
-        end
-
-        if activated then
-            return true
-        end
-    end
-
-    -- Final fallback: physically click the center of the GUI button.
-    local position = button.AbsolutePosition
-    local size = button.AbsoluteSize
-    local x = position.X + (size.X / 2)
-    local y = position.Y + (size.Y / 2)
-
+    ----------------------------------------------------------------
+    -- ORIGINAL REMOTE FORMAT FALLBACK
+    ----------------------------------------------------------------
     pcall(function()
-        VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
-        task.wait(0.05)
-        VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
+        if hatchType == "Multi" then
+            EggRemote:FireServer("PurchaseEgg", eggName, "Multi")
+        else
+            EggRemote:FireServer("PurchaseEgg", eggName)
+        end
     end)
 
     return true
 end
 
-local function clickHatchButton(buttonName)
-    local button = findHatchButton(buttonName)
+refreshEggList()
 
-    if not button then
+btns:Seperator()
+
+btns:Dropdown("Choose Egg", eggs, function(CurrentOption)
+    SelectedEgg = CurrentOption
+end)
+
+btns:Seperator()
+
+btns:Toggle("Automatically Detect Nearby Egg", true, function(bool)
+    AutoDetectEgg = bool
+end)
+
+btns:Button("Refresh Egg List", function()
+    refreshEggList()
+end)
+
+btns:Button("Detect Current Egg", function()
+    local detectedEgg = detectNearestEgg()
+
+    if detectedEgg then
         DiscordLib:Notification(
-            "Auto Hatch",
-            'Could not find the "' .. buttonName .. '" button. Stand beside an egg so the hatch buttons are visible.',
+            "Egg Detection",
+            "Detected egg: " .. detectedEgg,
             "Okay!"
         )
-        return false
-    end
-
-    return activateButton(button)
-end
-
-btns:Seperator()
-
-btns:Toggle("Use Game Auto Hatch", false, function(enabled)
-    getgenv().gameAutoHatch = enabled
-
-    -- The game's Auto button normally toggles itself, so click once
-    -- whenever this script toggle is changed.
-    clickHatchButton("Auto")
-end)
-
-btns:Seperator()
-
-btns:Toggle("Auto Open 1", false, function(enabled)
-    getgenv().autoOpenOne = enabled
-
-    while getgenv().autoOpenOne do
-        if not clickHatchButton("Open 1") then
-            getgenv().autoOpenOne = false
-            break
-        end
-
-        task.wait(0.35)
+    else
+        DiscordLib:Notification(
+            "Egg Detection",
+            "No nearby egg was detected.",
+            "Okay!"
+        )
     end
 end)
 
 btns:Seperator()
 
-btns:Toggle("Auto Open 3", false, function(enabled)
-    getgenv().autoOpenThree = enabled
+----------------------------------------------------------------
+-- SINGLE HATCH
+----------------------------------------------------------------
+btns:Toggle("Open Selected Egg", false, function(bool)
+    getgenv().singleegg = bool
 
-    while getgenv().autoOpenThree do
-        if not clickHatchButton("Open 3") then
-            getgenv().autoOpenThree = false
-            break
-        end
-
-        task.wait(0.35)
+    while getgenv().singleegg do
+        hatchEgg("Single")
+        task.wait(0.25)
     end
 end)
 
 btns:Seperator()
 
-btns:Button("Test Open 1", function()
-    clickHatchButton("Open 1")
+----------------------------------------------------------------
+-- TRIPLE HATCH
+----------------------------------------------------------------
+btns:Toggle("Triple Open Selected Egg", false, function(bool)
+    getgenv().tripleeggs = bool
+
+    while getgenv().tripleeggs do
+        hatchEgg("Multi")
+        task.wait(0.25)
+    end
 end)
 
-btns:Button("Test Open 3", function()
-    clickHatchButton("Open 3")
+btns:Seperator()
+
+btns:Button("Test Single Hatch", function()
+    hatchEgg("Single")
 end)
 
-btns:Button("Test Auto", function()
-    clickHatchButton("Auto")
+btns:Button("Test Triple Hatch", function()
+    hatchEgg("Multi")
 end)
 
 btns:Seperator()
 
 btns:Button("Remove Egg Animation", function()
-    local assets = game:GetService("ReplicatedStorage"):FindFirstChild("Assets")
+    local assets = ReplicatedStorage:FindFirstChild("Assets")
     local eggAnimations = assets and assets:FindFirstChild("Eggs")
 
     if eggAnimations then

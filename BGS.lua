@@ -578,133 +578,183 @@ end)
 
 
 ----------------------------------------------------------------
--- HATCH REMOTE DETECTOR
--- Turn this on, then manually press Open 1, Open 3, and Auto.
--- The exact remote arguments will print to the executor console.
+-- MANUAL GAME-BUTTON PRESS AUGMENTATION
+-- Uses the visible game buttons instead of guessing remote arguments.
 ----------------------------------------------------------------
 
-local HttpService = game:GetService("HttpService")
-local HatchDetectorEnabled = false
-local LastDetectedCall = "No hatch call detected yet."
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = game:GetService("Players").LocalPlayer
 
-local function stringify(value, depth)
-    depth = depth or 0
-
-    if depth > 4 then
-        return "<max depth>"
-    end
-
-    if typeof(value) == "table" then
-        local pieces = {"{"}
-
-        for key, item in pairs(value) do
-            table.insert(
-                pieces,
-                "[" .. stringify(key, depth + 1) .. "]=" .. stringify(item, depth + 1) .. ","
-            )
-        end
-
-        table.insert(pieces, "}")
-        return table.concat(pieces)
-    end
-
-    if typeof(value) == "string" then
-        return string.format("%q", value)
-    end
-
-    return tostring(value)
+local function normalizeButtonText(text)
+    return tostring(text or "")
+        :lower()
+        :gsub("%s+", "")
+        :gsub("[^%w]", "")
 end
 
-local detectorInstalled = false
+local function getVisibleGuiButtonFromObject(object)
+    local current = object
 
-local function installHatchDetector()
-    if detectorInstalled then
-        HatchDetectorEnabled = true
-        return
+    while current and current ~= LocalPlayer.PlayerGui do
+        if current:IsA("GuiButton") then
+            return current
+        end
+        current = current.Parent
     end
 
-    if typeof(hookmetamethod) ~= "function"
-        or typeof(getnamecallmethod) ~= "function"
-        or typeof(newcclosure) ~= "function"
-    then
-        DiscordLib:Notification(
-            "Hatch Detector",
-            "Your executor does not support hookmetamethod/getnamecallmethod.",
-            "Okay!"
-        )
-        return
+    return nil
+end
+
+local function guiObjectIsVisible(object)
+    local current = object
+
+    while current and current ~= LocalPlayer.PlayerGui do
+        if current:IsA("GuiObject") and not current.Visible then
+            return false
+        end
+        current = current.Parent
     end
 
-    detectorInstalled = true
-    HatchDetectorEnabled = true
+    return true
+end
 
-    local oldNamecall
-    oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        local args = {...}
+local function findGameHatchButton(targetText)
+    local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    if not playerGui then
+        return nil
+    end
 
-        if HatchDetectorEnabled
-            and method == "FireServer"
-            and self.Name == "NetworkRemoteEvent"
+    local target = normalizeButtonText(targetText)
+
+    -- First search visible text labels/buttons and walk upward
+    -- to the clickable GuiButton that owns the label.
+    for _, object in ipairs(playerGui:GetDescendants()) do
+        if (object:IsA("TextLabel") or object:IsA("TextButton"))
+            and guiObjectIsVisible(object)
         then
-            local serialized = {}
+            local text = normalizeButtonText(object.Text)
 
-            for index, value in ipairs(args) do
-                table.insert(
-                    serialized,
-                    "[" .. index .. "] = " .. stringify(value)
-                )
-            end
+            if text == target or text:find(target, 1, true) then
+                local button = getVisibleGuiButtonFromObject(object)
 
-            local result = "NetworkRemoteEvent:FireServer(\n    "
-                .. table.concat(serialized, ",\n    ")
-                .. "\n)"
-
-            LastDetectedCall = result
-
-            print("========================================")
-            print("HATCH REMOTE DETECTED")
-            print(result)
-            print("========================================")
-
-            if typeof(setclipboard) == "function" then
-                pcall(function()
-                    setclipboard(result)
-                end)
+                if button and guiObjectIsVisible(button) then
+                    return button
+                end
             end
         end
+    end
 
-        return oldNamecall(self, ...)
-    end))
+    -- Fallback: match the GuiButton name itself.
+    for _, object in ipairs(playerGui:GetDescendants()) do
+        if object:IsA("GuiButton")
+            and guiObjectIsVisible(object)
+            and normalizeButtonText(object.Name):find(target, 1, true)
+        then
+            return object
+        end
+    end
 
-    DiscordLib:Notification(
-        "Hatch Detector",
-        "Detector enabled. Manually press Open 1, Open 3, and Auto. Each call will print and copy.",
-        "Okay!"
-    )
+    return nil
+end
+
+local function manuallyPressGuiButton(button)
+    if not button then
+        return false
+    end
+
+    -- Prefer direct signal activation when supported.
+    if typeof(firesignal) == "function" then
+        local fired = false
+
+        pcall(function()
+            firesignal(button.Activated)
+            fired = true
+        end)
+
+        pcall(function()
+            firesignal(button.MouseButton1Click)
+            fired = true
+        end)
+
+        if fired then
+            return true
+        end
+    end
+
+    -- Physical click fallback using the button's center point.
+    local position = button.AbsolutePosition
+    local size = button.AbsoluteSize
+
+    if size.X <= 0 or size.Y <= 0 then
+        return false
+    end
+
+    local x = position.X + (size.X / 2)
+    local y = position.Y + (size.Y / 2)
+
+    local success = pcall(function()
+        VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
+        task.wait(0.06)
+        VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
+    end)
+
+    return success
+end
+
+local function pressGameHatchButton(buttonText)
+    local button = findGameHatchButton(buttonText)
+
+    if not button then
+        DiscordLib:Notification(
+            "Manual Hatch Press",
+            'Could not find "' .. buttonText .. '". Stand beside an egg so its buttons are visible.',
+            "Okay!"
+        )
+        return false
+    end
+
+    return manuallyPressGuiButton(button)
 end
 
 btns:Seperator()
 
-btns:Button("Enable Hatch Remote Detector", function()
-    installHatchDetector()
+btns:Button("Press Game Open 1", function()
+    pressGameHatchButton("Open 1")
 end)
 
-btns:Button("Disable Hatch Remote Detector", function()
-    HatchDetectorEnabled = false
+btns:Button("Press Game Open 3", function()
+    pressGameHatchButton("Open 3")
 end)
 
-btns:Button("Copy Last Detected Hatch Call", function()
-    if typeof(setclipboard) == "function" then
-        setclipboard(LastDetectedCall)
+btns:Button("Press Game Auto", function()
+    pressGameHatchButton("Auto")
+end)
 
-        DiscordLib:Notification(
-            "Hatch Detector",
-            "Last detected call copied.",
-            "Okay!"
-        )
-    else
-        print(LastDetectedCall)
+btns:Seperator()
+
+btns:Toggle("Repeat Game Open 1", false, function(bool)
+    getgenv().repeatGameOpen1 = bool
+
+    while getgenv().repeatGameOpen1 do
+        if not pressGameHatchButton("Open 1") then
+            getgenv().repeatGameOpen1 = false
+            break
+        end
+
+        task.wait(0.4)
+    end
+end)
+
+btns:Toggle("Repeat Game Open 3", false, function(bool)
+    getgenv().repeatGameOpen3 = bool
+
+    while getgenv().repeatGameOpen3 do
+        if not pressGameHatchButton("Open 3") then
+            getgenv().repeatGameOpen3 = false
+            break
+        end
+
+        task.wait(0.4)
     end
 end)
 

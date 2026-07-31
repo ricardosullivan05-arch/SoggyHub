@@ -566,56 +566,146 @@ end)
 
 btns:Seperator()
 
-btns:Button("Hide Egg Animation", function()
-    local replicatedStorage = game:GetService("ReplicatedStorage")
-    local eggAssets = replicatedStorage:FindFirstChild("Assets")
-        and replicatedStorage.Assets:FindFirstChild("Eggs")
-
-    if not eggAssets then
-        return
-    end
-
-    -- Preserve every object because Auto Hatch may depend on this folder.
-    -- Only disable or hide visual/audio effects.
-    for _, object in ipairs(eggAssets:GetDescendants()) do
-        pcall(function()
-            if object:IsA("ParticleEmitter")
-                or object:IsA("Trail")
-                or object:IsA("Beam")
-                or object:IsA("Smoke")
-                or object:IsA("Fire")
-                or object:IsA("Sparkles")
-            then
-                object.Enabled = false
-
-            elseif object:IsA("Sound") then
-                object.Volume = 0
-
-            elseif object:IsA("BasePart") then
-                object.Transparency = 1
-                object.CanCollide = false
-                object.CastShadow = false
-
-            elseif object:IsA("Decal") or object:IsA("Texture") then
-                object.Transparency = 1
-
-            elseif object:IsA("BillboardGui")
-                or object:IsA("SurfaceGui")
-                or object:IsA("ScreenGui")
-            then
-                object.Enabled = false
-
-            elseif object:IsA("GuiObject") then
-                object.Visible = false
-            end
-        end)
-    end
+btns:Button("Remove Egg Animation", function()
+    game:GetService("ReplicatedStorage").Assets.Eggs:Destroy()
 end)
 
 btns:Seperator()
 
 btns:Button("Stats Counter", function()
     game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.MobileStats.Visible = true
+end)
+
+
+----------------------------------------------------------------
+-- HATCH REMOTE DETECTOR
+-- Turn this on, then manually press Open 1, Open 3, and Auto.
+-- The exact remote arguments will print to the executor console.
+----------------------------------------------------------------
+
+local HttpService = game:GetService("HttpService")
+local HatchDetectorEnabled = false
+local LastDetectedCall = "No hatch call detected yet."
+
+local function stringify(value, depth)
+    depth = depth or 0
+
+    if depth > 4 then
+        return "<max depth>"
+    end
+
+    if typeof(value) == "table" then
+        local pieces = {"{"}
+
+        for key, item in pairs(value) do
+            table.insert(
+                pieces,
+                "[" .. stringify(key, depth + 1) .. "]=" .. stringify(item, depth + 1) .. ","
+            )
+        end
+
+        table.insert(pieces, "}")
+        return table.concat(pieces)
+    end
+
+    if typeof(value) == "string" then
+        return string.format("%q", value)
+    end
+
+    return tostring(value)
+end
+
+local detectorInstalled = false
+
+local function installHatchDetector()
+    if detectorInstalled then
+        HatchDetectorEnabled = true
+        return
+    end
+
+    if typeof(hookmetamethod) ~= "function"
+        or typeof(getnamecallmethod) ~= "function"
+        or typeof(newcclosure) ~= "function"
+    then
+        DiscordLib:Notification(
+            "Hatch Detector",
+            "Your executor does not support hookmetamethod/getnamecallmethod.",
+            "Okay!"
+        )
+        return
+    end
+
+    detectorInstalled = true
+    HatchDetectorEnabled = true
+
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+
+        if HatchDetectorEnabled
+            and method == "FireServer"
+            and self.Name == "NetworkRemoteEvent"
+        then
+            local serialized = {}
+
+            for index, value in ipairs(args) do
+                table.insert(
+                    serialized,
+                    "[" .. index .. "] = " .. stringify(value)
+                )
+            end
+
+            local result = "NetworkRemoteEvent:FireServer(\n    "
+                .. table.concat(serialized, ",\n    ")
+                .. "\n)"
+
+            LastDetectedCall = result
+
+            print("========================================")
+            print("HATCH REMOTE DETECTED")
+            print(result)
+            print("========================================")
+
+            if typeof(setclipboard) == "function" then
+                pcall(function()
+                    setclipboard(result)
+                end)
+            end
+        end
+
+        return oldNamecall(self, ...)
+    end))
+
+    DiscordLib:Notification(
+        "Hatch Detector",
+        "Detector enabled. Manually press Open 1, Open 3, and Auto. Each call will print and copy.",
+        "Okay!"
+    )
+end
+
+btns:Seperator()
+
+btns:Button("Enable Hatch Remote Detector", function()
+    installHatchDetector()
+end)
+
+btns:Button("Disable Hatch Remote Detector", function()
+    HatchDetectorEnabled = false
+end)
+
+btns:Button("Copy Last Detected Hatch Call", function()
+    if typeof(setclipboard) == "function" then
+        setclipboard(LastDetectedCall)
+
+        DiscordLib:Notification(
+            "Hatch Detector",
+            "Last detected call copied.",
+            "Okay!"
+        )
+    else
+        print(LastDetectedCall)
+    end
 end)
 
 local btns = serv:Channel("Worlds")

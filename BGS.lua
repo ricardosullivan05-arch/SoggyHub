@@ -523,45 +523,123 @@ end)
 
 local btns = serv:Channel("Eggs")
 
-local eggs = {};
-for i,v in pairs(workspace.Eggs:GetChildren()) do
-    table.insert(eggs, v.Name)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local EggRemote = ReplicatedStorage:WaitForChild("NetworkRemoteEvent")
+
+local eggs = {}
+for _, egg in pairs(workspace.Eggs:GetChildren()) do
+    table.insert(eggs, egg.Name)
 end
+
+table.sort(eggs)
+
+local SelectedEgg = eggs[1]
+local TripleProtocol = "Original Multi"
 
 btns:Seperator()
 
 btns:Dropdown("Choose Egg", eggs, function(CurrentOption)
-    wait()
     SelectedEgg = CurrentOption
 end)
 
-btns:Toggle("Open Selected Egg",false, function(bool)
-    getgenv().singleegg = bool 
+btns:Dropdown("Triple Protocol", {
+    "Original Multi",
+    "Triple String",
+    "Table Multi"
+}, function(CurrentOption)
+    TripleProtocol = CurrentOption
+end)
 
-    while singleegg do wait()
-        local args = {
-            [1] = "PurchaseEgg",
-            [2] = (SelectedEgg), 
-        }
-        
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
+----------------------------------------------------------------
+-- SAME PURCHASE PATTERN USED BY SINGLE, TRIPLE, AND AUTO
+----------------------------------------------------------------
+
+local function purchaseSingle()
+    if not SelectedEgg then
+        return false
+    end
+
+    EggRemote:FireServer("PurchaseEgg", SelectedEgg)
+    return true
+end
+
+local function purchaseTriple()
+    if not SelectedEgg then
+        return false
+    end
+
+    if TripleProtocol == "Original Multi" then
+        -- Original script format.
+        EggRemote:FireServer("PurchaseEgg", SelectedEgg, "Multi")
+
+    elseif TripleProtocol == "Triple String" then
+        -- Some updated games use "Triple" instead of "Multi".
+        EggRemote:FireServer("PurchaseEgg", SelectedEgg, "Triple")
+
+    elseif TripleProtocol == "Table Multi" then
+        -- Newer table-based format.
+        EggRemote:FireServer({
+            Action = "PurchaseEgg",
+            EggName = SelectedEgg,
+            HatchType = "Multi"
+        })
+    end
+
+    return true
+end
+
+btns:Seperator()
+
+----------------------------------------------------------------
+-- ORIGINAL SINGLE HATCH
+----------------------------------------------------------------
+btns:Toggle("Open Selected Egg", false, function(enabled)
+    getgenv().singleegg = enabled
+
+    while getgenv().singleegg do
+        purchaseSingle()
+        task.wait(0.25)
     end
 end)
 
 btns:Seperator()
 
-btns:Toggle("Triple Open Selected Egg",false, function(bool)
-    getgenv().tripleeggs = bool 
+----------------------------------------------------------------
+-- TRUE TRIPLE HATCH
+-- Uses one triple request, not three single requests.
+----------------------------------------------------------------
+btns:Toggle("Triple Open Selected Egg", false, function(enabled)
+    getgenv().tripleeggs = enabled
 
-    while tripleeggs do wait()
-        local args = {
-            [1] = "PurchaseEgg",
-            [2] = (SelectedEgg), 
-            [3] = "Multi"
-            }
-
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
+    while getgenv().tripleeggs do
+        purchaseTriple()
+        task.wait(0.35)
     end
+end)
+
+btns:Seperator()
+
+----------------------------------------------------------------
+-- AUTO HATCH
+-- Repeats the same true triple-hatch request selected above.
+----------------------------------------------------------------
+btns:Toggle("Auto Triple Hatch", false, function(enabled)
+    getgenv().autoTripleHatch = enabled
+
+    while getgenv().autoTripleHatch do
+        purchaseTriple()
+        task.wait(0.35)
+    end
+end)
+
+btns:Seperator()
+
+btns:Button("Test Single Once", function()
+    purchaseSingle()
+end)
+
+btns:Button("Test Triple Once", function()
+    purchaseTriple()
 end)
 
 btns:Seperator()
@@ -574,207 +652,6 @@ btns:Seperator()
 
 btns:Button("Stats Counter", function()
     game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.MobileStats.Visible = true
-end)
-
-
-----------------------------------------------------------------
--- MANUAL GAME-BUTTON PRESS AUGMENTATION
--- Uses the visible game buttons instead of guessing remote arguments.
-----------------------------------------------------------------
-
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local LocalPlayer = game:GetService("Players").LocalPlayer
-
-local function normalizeButtonText(text)
-    return tostring(text or "")
-        :lower()
-        :gsub("%s+", "")
-        :gsub("[^%w]", "")
-end
-
-local function getVisibleGuiButtonFromObject(object)
-    local current = object
-
-    while current and current ~= LocalPlayer.PlayerGui do
-        if current:IsA("GuiButton") then
-            return current
-        end
-        current = current.Parent
-    end
-
-    return nil
-end
-
-local function guiObjectIsVisible(object)
-    local current = object
-
-    while current and current ~= LocalPlayer.PlayerGui do
-        if current:IsA("GuiObject") and not current.Visible then
-            return false
-        end
-        current = current.Parent
-    end
-
-    return true
-end
-
-local function findGameHatchButton(targetText)
-    local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-    if not playerGui then
-        return nil
-    end
-
-    local target = normalizeButtonText(targetText)
-
-    -- First search visible text labels/buttons and walk upward
-    -- to the clickable GuiButton that owns the label.
-    for _, object in ipairs(playerGui:GetDescendants()) do
-        if (object:IsA("TextLabel") or object:IsA("TextButton"))
-            and guiObjectIsVisible(object)
-        then
-            local text = normalizeButtonText(object.Text)
-
-            if text == target or text:find(target, 1, true) then
-                local button = getVisibleGuiButtonFromObject(object)
-
-                if button and guiObjectIsVisible(button) then
-                    return button
-                end
-            end
-        end
-    end
-
-    -- Fallback: match the GuiButton name itself.
-    for _, object in ipairs(playerGui:GetDescendants()) do
-        if object:IsA("GuiButton")
-            and guiObjectIsVisible(object)
-            and normalizeButtonText(object.Name):find(target, 1, true)
-        then
-            return object
-        end
-    end
-
-    return nil
-end
-
-local function manuallyPressGuiButton(button)
-    if not button then
-        return false
-    end
-
-    -- Prefer direct signal activation when supported.
-    if typeof(firesignal) == "function" then
-        local fired = false
-
-        pcall(function()
-            firesignal(button.Activated)
-            fired = true
-        end)
-
-        pcall(function()
-            firesignal(button.MouseButton1Click)
-            fired = true
-        end)
-
-        if fired then
-            return true
-        end
-    end
-
-    -- Physical click fallback using the button's center point.
-    local position = button.AbsolutePosition
-    local size = button.AbsoluteSize
-
-    if size.X <= 0 or size.Y <= 0 then
-        return false
-    end
-
-    local x = position.X + (size.X / 2)
-    local y = position.Y + (size.Y / 2)
-
-    local success = pcall(function()
-        VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
-        task.wait(0.06)
-        VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
-    end)
-
-    return success
-end
-
-local function pressGameHatchButton(buttonText)
-    local button = findGameHatchButton(buttonText)
-
-    if not button then
-        DiscordLib:Notification(
-            "Manual Hatch Press",
-            'Could not find "' .. buttonText .. '". Stand beside an egg so its buttons are visible.',
-            "Okay!"
-        )
-        return false
-    end
-
-    return manuallyPressGuiButton(button)
-end
-
-btns:Seperator()
-
-btns:Button("Press Game Open 1", function()
-    pressGameHatchButton("Open 1")
-end)
-
-btns:Button("Press Game Open 3", function()
-    -- Open 3 is not detected reliably, so use the working Open 1
-    -- button three times with a delay between each press.
-    task.spawn(function()
-        for i = 1, 3 do
-            if not pressGameHatchButton("Open 1") then
-                break
-            end
-
-            task.wait(0.85)
-        end
-    end)
-end)
-
-btns:Button("Press Game Auto", function()
-    pressGameHatchButton("Auto")
-end)
-
-btns:Seperator()
-
-btns:Toggle("Repeat Game Open 1", false, function(bool)
-    getgenv().repeatGameOpen1 = bool
-
-    while getgenv().repeatGameOpen1 do
-        if not pressGameHatchButton("Open 1") then
-            getgenv().repeatGameOpen1 = false
-            break
-        end
-
-        task.wait(0.4)
-    end
-end)
-
-btns:Toggle("Repeat Game Open 3", false, function(bool)
-    getgenv().repeatGameOpen3 = bool
-
-    while getgenv().repeatGameOpen3 do
-        -- Three sequential presses of the working Open 1 button.
-        for i = 1, 3 do
-            if not getgenv().repeatGameOpen3 then
-                break
-            end
-
-            if not pressGameHatchButton("Open 1") then
-                getgenv().repeatGameOpen3 = false
-                break
-            end
-
-            task.wait(0.85)
-        end
-
-        task.wait(0.35)
-    end
 end)
 
 local btns = serv:Channel("Worlds")

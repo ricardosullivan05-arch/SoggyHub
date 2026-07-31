@@ -528,6 +528,9 @@ for i,v in pairs(workspace.Eggs:GetChildren()) do
     table.insert(eggs, v.Name)
 end
 
+-- Default to the first egg so auto hatch has a valid egg immediately.
+SelectedEgg = SelectedEgg or eggs[1]
+
 btns:Seperator()
 
 btns:Dropdown("Choose Egg", eggs, function(CurrentOption)
@@ -538,13 +541,17 @@ end)
 btns:Toggle("Open Selected Egg",false, function(bool)
     getgenv().singleegg = bool 
 
-    while singleegg do wait()
-        local args = {
-            [1] = "PurchaseEgg",
-            [2] = (SelectedEgg), 
-        }
-        
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
+    while getgenv().singleegg do
+        wait()
+
+        if SelectedEgg then
+            local args = {
+                [1] = "PurchaseEgg",
+                [2] = SelectedEgg,
+            }
+
+            game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
+        end
     end
 end)
 
@@ -553,14 +560,18 @@ btns:Seperator()
 btns:Toggle("Triple Open Selected Egg",false, function(bool)
     getgenv().tripleeggs = bool 
 
-    while tripleeggs do wait()
-        local args = {
-            [1] = "PurchaseEgg",
-            [2] = (SelectedEgg), 
-            [3] = "Multi"
+    while getgenv().tripleeggs do
+        wait()
+
+        if SelectedEgg then
+            local args = {
+                [1] = "PurchaseEgg",
+                [2] = SelectedEgg,
+                [3] = "Multi"
             }
 
-        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
+            game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
+        end
     end
 end)
 

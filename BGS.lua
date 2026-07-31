@@ -528,8 +528,6 @@ for i,v in pairs(workspace.Eggs:GetChildren()) do
     table.insert(eggs, v.Name)
 end
 
-SelectedEgg = SelectedEgg or eggs[1]
-
 btns:Seperator()
 
 btns:Dropdown("Choose Egg", eggs, function(CurrentOption)
@@ -537,71 +535,81 @@ btns:Dropdown("Choose Egg", eggs, function(CurrentOption)
     SelectedEgg = CurrentOption
 end)
 
-----------------------------------------------------------------
--- SINGLE HATCH REMOTE
--- This is the working detection method used by every hatch mode.
-----------------------------------------------------------------
-local function HatchSingle()
-    if not SelectedEgg then
+btns:Toggle("Open Selected Egg",false, function(bool)
+    getgenv().singleegg = bool 
+
+    while singleegg do wait()
+        local args = {
+            [1] = "PurchaseEgg",
+            [2] = (SelectedEgg), 
+        }
+        
+        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
+    end
+end)
+
+btns:Seperator()
+
+btns:Toggle("Triple Open Selected Egg",false, function(bool)
+    getgenv().tripleeggs = bool 
+
+    while tripleeggs do wait()
+        local args = {
+            [1] = "PurchaseEgg",
+            [2] = (SelectedEgg), 
+            [3] = "Multi"
+            }
+
+        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
+    end
+end)
+
+btns:Seperator()
+
+btns:Button("Hide Egg Animation", function()
+    local replicatedStorage = game:GetService("ReplicatedStorage")
+    local eggAssets = replicatedStorage:FindFirstChild("Assets")
+        and replicatedStorage.Assets:FindFirstChild("Eggs")
+
+    if not eggAssets then
         return
     end
 
-    local args = {
-        [1] = "PurchaseEgg",
-        [2] = SelectedEgg
-    }
+    -- Preserve every object because Auto Hatch may depend on this folder.
+    -- Only disable or hide visual/audio effects.
+    for _, object in ipairs(eggAssets:GetDescendants()) do
+        pcall(function()
+            if object:IsA("ParticleEmitter")
+                or object:IsA("Trail")
+                or object:IsA("Beam")
+                or object:IsA("Smoke")
+                or object:IsA("Fire")
+                or object:IsA("Sparkles")
+            then
+                object.Enabled = false
 
-    game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-end
+            elseif object:IsA("Sound") then
+                object.Volume = 0
 
-----------------------------------------------------------------
--- SINGLE AUTO HATCH
-----------------------------------------------------------------
-btns:Toggle("Open Selected Egg",false, function(bool)
-    getgenv().singleegg = bool
+            elseif object:IsA("BasePart") then
+                object.Transparency = 1
+                object.CanCollide = false
+                object.CastShadow = false
 
-    while getgenv().singleegg do
-        HatchSingle()
-        wait(0.15)
+            elseif object:IsA("Decal") or object:IsA("Texture") then
+                object.Transparency = 1
+
+            elseif object:IsA("BillboardGui")
+                or object:IsA("SurfaceGui")
+                or object:IsA("ScreenGui")
+            then
+                object.Enabled = false
+
+            elseif object:IsA("GuiObject") then
+                object.Visible = false
+            end
+        end)
     end
-end)
-
-btns:Seperator()
-
-----------------------------------------------------------------
--- TRIPLE HATCH USING THREE SINGLE HATCH CALLS
-----------------------------------------------------------------
-btns:Toggle("Triple Open Selected Egg",false, function(bool)
-    getgenv().tripleeggs = bool
-
-    while getgenv().tripleeggs do
-        HatchSingle()
-        wait(0.05)
-        HatchSingle()
-        wait(0.05)
-        HatchSingle()
-        wait(0.15)
-    end
-end)
-
-btns:Seperator()
-
-----------------------------------------------------------------
--- AUTO HATCH USING THE SAME SINGLE HATCH DETECTION
-----------------------------------------------------------------
-btns:Toggle("Auto Hatch Selected Egg",false, function(bool)
-    getgenv().autohatchegg = bool
-
-    while getgenv().autohatchegg do
-        HatchSingle()
-        wait(0.15)
-    end
-end)
-
-btns:Seperator()
-
-btns:Button("Remove Egg Animation", function()
-    game:GetService("ReplicatedStorage").Assets.Eggs:Destroy()
 end)
 
 btns:Seperator()

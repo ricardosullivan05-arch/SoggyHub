@@ -523,240 +523,57 @@ end)
 
 local btns = serv:Channel("Eggs")
 
-----------------------------------------------------------------
--- ORIGINAL EGG DETECTION + NEW AUTOMATIC HATCHING
-----------------------------------------------------------------
-
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LocalPlayer = Players.LocalPlayer
-local EggRemote = ReplicatedStorage:WaitForChild("NetworkRemoteEvent")
-
-local eggs = {}
-local SelectedEgg = nil
-local AutoDetectEgg = true
-
-local function refreshEggList()
-    table.clear(eggs)
-
-    local eggFolder = workspace:FindFirstChild("Eggs")
-    if not eggFolder then
-        return
-    end
-
-    for _, egg in ipairs(eggFolder:GetChildren()) do
-        table.insert(eggs, egg.Name)
-    end
-
-    table.sort(eggs)
-
-    if not SelectedEgg and #eggs > 0 then
-        SelectedEgg = eggs[1]
-    end
+local eggs = {};
+for i,v in pairs(workspace.Eggs:GetChildren()) do
+    table.insert(eggs, v.Name)
 end
-
-local function getObjectPosition(object)
-    if object:IsA("BasePart") then
-        return object.Position
-    end
-
-    if object:IsA("Model") then
-        local primaryPart = object.PrimaryPart
-            or object:FindFirstChild("Root")
-            or object:FindFirstChild("Main")
-            or object:FindFirstChildWhichIsA("BasePart", true)
-
-        if primaryPart then
-            return primaryPart.Position
-        end
-
-        local success, pivot = pcall(function()
-            return object:GetPivot()
-        end)
-
-        if success then
-            return pivot.Position
-        end
-    end
-
-    local part = object:FindFirstChildWhichIsA("BasePart", true)
-    return part and part.Position or nil
-end
-
-local function detectNearestEgg()
-    local character = LocalPlayer.Character
-    local root = character and character:FindFirstChild("HumanoidRootPart")
-    local eggFolder = workspace:FindFirstChild("Eggs")
-
-    if not root or not eggFolder then
-        return SelectedEgg
-    end
-
-    local nearestName = nil
-    local nearestDistance = math.huge
-
-    for _, egg in ipairs(eggFolder:GetChildren()) do
-        local position = getObjectPosition(egg)
-
-        if position then
-            local distance = (root.Position - position).Magnitude
-
-            if distance < nearestDistance then
-                nearestDistance = distance
-                nearestName = egg.Name
-            end
-        end
-    end
-
-    -- Only automatically select an egg when the player is reasonably near it.
-    if nearestName and nearestDistance <= 35 then
-        SelectedEgg = nearestName
-    end
-
-    return SelectedEgg
-end
-
-local function getCurrentEgg()
-    if AutoDetectEgg then
-        return detectNearestEgg()
-    end
-
-    return SelectedEgg
-end
-
-local function hatchEgg(hatchType)
-    local eggName = getCurrentEgg()
-
-    if not eggName then
-        return false
-    end
-
-    ----------------------------------------------------------------
-    -- NEW REMOTE FORMAT
-    ----------------------------------------------------------------
-    local newArgs = {
-        Action = "PurchaseEgg",
-        EggName = eggName,
-        HatchType = hatchType
-    }
-
-    local success = pcall(function()
-        EggRemote:FireServer(newArgs)
-    end)
-
-    if success then
-        return true
-    end
-
-    ----------------------------------------------------------------
-    -- ORIGINAL REMOTE FORMAT FALLBACK
-    ----------------------------------------------------------------
-    pcall(function()
-        if hatchType == "Multi" then
-            EggRemote:FireServer("PurchaseEgg", eggName, "Multi")
-        else
-            EggRemote:FireServer("PurchaseEgg", eggName)
-        end
-    end)
-
-    return true
-end
-
-refreshEggList()
 
 btns:Seperator()
 
 btns:Dropdown("Choose Egg", eggs, function(CurrentOption)
+    wait()
     SelectedEgg = CurrentOption
 end)
 
-btns:Seperator()
+btns:Toggle("Open Selected Egg",false, function(bool)
+    getgenv().singleegg = bool 
 
-btns:Toggle("Automatically Detect Nearby Egg", true, function(bool)
-    AutoDetectEgg = bool
-end)
-
-btns:Button("Refresh Egg List", function()
-    refreshEggList()
-end)
-
-btns:Button("Detect Current Egg", function()
-    local detectedEgg = detectNearestEgg()
-
-    if detectedEgg then
-        DiscordLib:Notification(
-            "Egg Detection",
-            "Detected egg: " .. detectedEgg,
-            "Okay!"
-        )
-    else
-        DiscordLib:Notification(
-            "Egg Detection",
-            "No nearby egg was detected.",
-            "Okay!"
-        )
+    while singleegg do wait()
+        local args = {
+            [1] = "PurchaseEgg",
+            [2] = (SelectedEgg), 
+        }
+        
+        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
     end
 end)
 
 btns:Seperator()
 
-----------------------------------------------------------------
--- SINGLE HATCH
-----------------------------------------------------------------
-btns:Toggle("Open Selected Egg", false, function(bool)
-    getgenv().singleegg = bool
+btns:Toggle("Triple Open Selected Egg",false, function(bool)
+    getgenv().tripleeggs = bool 
 
-    while getgenv().singleegg do
-        hatchEgg("Single")
-        task.wait(0.25)
+    while tripleeggs do wait()
+        local args = {
+            [1] = "PurchaseEgg",
+            [2] = (SelectedEgg), 
+            [3] = "Multi"
+            }
+
+        game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
     end
-end)
-
-btns:Seperator()
-
-----------------------------------------------------------------
--- TRIPLE HATCH
-----------------------------------------------------------------
-btns:Toggle("Triple Open Selected Egg", false, function(bool)
-    getgenv().tripleeggs = bool
-
-    while getgenv().tripleeggs do
-        hatchEgg("Multi")
-        task.wait(0.25)
-    end
-end)
-
-btns:Seperator()
-
-btns:Button("Test Single Hatch", function()
-    hatchEgg("Single")
-end)
-
-btns:Button("Test Triple Hatch", function()
-    hatchEgg("Multi")
 end)
 
 btns:Seperator()
 
 btns:Button("Remove Egg Animation", function()
-    local assets = ReplicatedStorage:FindFirstChild("Assets")
-    local eggAnimations = assets and assets:FindFirstChild("Eggs")
-
-    if eggAnimations then
-        eggAnimations:Destroy()
-    end
+    game:GetService("ReplicatedStorage").Assets.Eggs:Destroy()
 end)
 
 btns:Seperator()
 
 btns:Button("Stats Counter", function()
-    local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-    local screenGui = playerGui and playerGui:FindFirstChild("ScreenGui")
-    local mobileStats = screenGui and screenGui:FindFirstChild("MobileStats")
-
-    if mobileStats then
-        mobileStats.Visible = true
-    end
+    game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.MobileStats.Visible = true
 end)
 
 local btns = serv:Channel("Worlds")

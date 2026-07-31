@@ -528,7 +528,6 @@ for i,v in pairs(workspace.Eggs:GetChildren()) do
     table.insert(eggs, v.Name)
 end
 
--- Default to the first egg so auto hatch has a valid egg immediately.
 SelectedEgg = SelectedEgg or eggs[1]
 
 btns:Seperator()
@@ -538,40 +537,64 @@ btns:Dropdown("Choose Egg", eggs, function(CurrentOption)
     SelectedEgg = CurrentOption
 end)
 
+----------------------------------------------------------------
+-- SINGLE HATCH REMOTE
+-- This is the working detection method used by every hatch mode.
+----------------------------------------------------------------
+local function HatchSingle()
+    if not SelectedEgg then
+        return
+    end
+
+    local args = {
+        [1] = "PurchaseEgg",
+        [2] = SelectedEgg
+    }
+
+    game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
+end
+
+----------------------------------------------------------------
+-- SINGLE AUTO HATCH
+----------------------------------------------------------------
 btns:Toggle("Open Selected Egg",false, function(bool)
-    getgenv().singleegg = bool 
+    getgenv().singleegg = bool
 
     while getgenv().singleegg do
-        wait()
-
-        if SelectedEgg then
-            local args = {
-                [1] = "PurchaseEgg",
-                [2] = SelectedEgg,
-            }
-
-            game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        end
+        HatchSingle()
+        wait(0.15)
     end
 end)
 
 btns:Seperator()
 
+----------------------------------------------------------------
+-- TRIPLE HATCH USING THREE SINGLE HATCH CALLS
+----------------------------------------------------------------
 btns:Toggle("Triple Open Selected Egg",false, function(bool)
-    getgenv().tripleeggs = bool 
+    getgenv().tripleeggs = bool
 
     while getgenv().tripleeggs do
-        wait()
+        HatchSingle()
+        wait(0.05)
+        HatchSingle()
+        wait(0.05)
+        HatchSingle()
+        wait(0.15)
+    end
+end)
 
-        if SelectedEgg then
-            local args = {
-                [1] = "PurchaseEgg",
-                [2] = SelectedEgg,
-                [3] = "Multi"
-            }
+btns:Seperator()
 
-            game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(unpack(args))
-        end
+----------------------------------------------------------------
+-- AUTO HATCH USING THE SAME SINGLE HATCH DETECTION
+----------------------------------------------------------------
+btns:Toggle("Auto Hatch Selected Egg",false, function(bool)
+    getgenv().autohatchegg = bool
+
+    while getgenv().autohatchegg do
+        HatchSingle()
+        wait(0.15)
     end
 end)
 

@@ -523,61 +523,201 @@ end)
 
 local btns = serv:Channel("Eggs")
 
-local eggs = {}
-for i,v in pairs(workspace.Eggs:GetChildren()) do
-    table.insert(eggs, v.Name)
+----------------------------------------------------------------
+-- UI BUTTON AUTO-HATCH
+-- Detects and activates the game's Auto, Open 3, and Open 1 buttons.
+----------------------------------------------------------------
+
+local Players = game:GetService("Players")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
+
+local function normalizeText(value)
+    return tostring(value or "")
+        :lower()
+        :gsub("%s+", "")
+        :gsub("[^%w]", "")
 end
 
-local SelectedEgg = eggs[1]
+local function getButtonText(button)
+    local combinedText = ""
+
+    if button:IsA("TextButton") then
+        combinedText = combinedText .. " " .. button.Text
+    end
+
+    for _, child in ipairs(button:GetDescendants()) do
+        if child:IsA("TextLabel") or child:IsA("TextButton") then
+            combinedText = combinedText .. " " .. child.Text
+        end
+    end
+
+    return normalizeText(combinedText)
+end
+
+local function isVisible(button)
+    if not button.Visible then
+        return false
+    end
+
+    local current = button.Parent
+    while current and current ~= LocalPlayer.PlayerGui do
+        if current:IsA("GuiObject") and not current.Visible then
+            return false
+        end
+        current = current.Parent
+    end
+
+    return true
+end
+
+local function findHatchButton(buttonName)
+    local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    if not playerGui then
+        return nil
+    end
+
+    local target = normalizeText(buttonName)
+
+    for _, object in ipairs(playerGui:GetDescendants()) do
+        if object:IsA("GuiButton") and isVisible(object) then
+            local objectName = normalizeText(object.Name)
+            local objectText = getButtonText(object)
+
+            if objectName == target
+                or objectText == target
+                or objectText:find(target, 1, true)
+            then
+                return object
+            end
+        end
+    end
+
+    return nil
+end
+
+local function activateButton(button)
+    if not button then
+        return false
+    end
+
+    -- Executor-supported signal activation.
+    if typeof(firesignal) == "function" then
+        pcall(function()
+            firesignal(button.Activated)
+        end)
+
+        pcall(function()
+            firesignal(button.MouseButton1Click)
+        end)
+
+        return true
+    end
+
+    -- Fallback: activate connected callbacks directly.
+    if typeof(getconnections) == "function" then
+        local activated = false
+
+        for _, signal in ipairs({button.Activated, button.MouseButton1Click}) do
+            for _, connection in ipairs(getconnections(signal)) do
+                pcall(function()
+                    if connection.Fire then
+                        connection:Fire()
+                    elseif connection.Function then
+                        connection.Function()
+                    end
+                end)
+                activated = true
+            end
+        end
+
+        if activated then
+            return true
+        end
+    end
+
+    -- Final fallback: physically click the center of the GUI button.
+    local position = button.AbsolutePosition
+    local size = button.AbsoluteSize
+    local x = position.X + (size.X / 2)
+    local y = position.Y + (size.Y / 2)
+
+    pcall(function()
+        VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
+        task.wait(0.05)
+        VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
+    end)
+
+    return true
+end
+
+local function clickHatchButton(buttonName)
+    local button = findHatchButton(buttonName)
+
+    if not button then
+        DiscordLib:Notification(
+            "Auto Hatch",
+            'Could not find the "' .. buttonName .. '" button. Stand beside an egg so the hatch buttons are visible.',
+            "Okay!"
+        )
+        return false
+    end
+
+    return activateButton(button)
+end
 
 btns:Seperator()
 
-btns:Dropdown("Choose Egg", eggs, function(CurrentOption)
-    SelectedEgg = CurrentOption
+btns:Toggle("Use Game Auto Hatch", false, function(enabled)
+    getgenv().gameAutoHatch = enabled
+
+    -- The game's Auto button normally toggles itself, so click once
+    -- whenever this script toggle is changed.
+    clickHatchButton("Auto")
 end)
 
-----------------------------------------------------------------
--- FIXED SINGLE HATCH (NEW REMOTE FORMAT)
-----------------------------------------------------------------
-btns:Toggle("Open Selected Egg", false, function(bool)
-    getgenv().singleegg = bool
+btns:Seperator()
 
-    while getgenv().singleegg do
-        task.wait(0.1)
+btns:Toggle("Auto Open 1", false, function(enabled)
+    getgenv().autoOpenOne = enabled
 
-        if SelectedEgg then
-            local args = {
-                Action = "PurchaseEgg",
-                EggName = SelectedEgg,
-                HatchType = "Single"
-            }
-
-            game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(args)
+    while getgenv().autoOpenOne do
+        if not clickHatchButton("Open 1") then
+            getgenv().autoOpenOne = false
+            break
         end
+
+        task.wait(0.35)
     end
 end)
 
 btns:Seperator()
 
-----------------------------------------------------------------
--- FIXED TRIPLE HATCH (NEW REMOTE FORMAT)
-----------------------------------------------------------------
-btns:Toggle("Triple Open Selected Egg", false, function(bool)
-    getgenv().tripleeggs = bool
+btns:Toggle("Auto Open 3", false, function(enabled)
+    getgenv().autoOpenThree = enabled
 
-    while getgenv().tripleeggs do
-        task.wait(0.1)
-
-        if SelectedEgg then
-            local args = {
-                Action = "PurchaseEgg",
-                EggName = SelectedEgg,
-                HatchType = "Multi"
-            }
-
-            game:GetService("ReplicatedStorage").NetworkRemoteEvent:FireServer(args)
+    while getgenv().autoOpenThree do
+        if not clickHatchButton("Open 3") then
+            getgenv().autoOpenThree = false
+            break
         end
+
+        task.wait(0.35)
     end
+end)
+
+btns:Seperator()
+
+btns:Button("Test Open 1", function()
+    clickHatchButton("Open 1")
+end)
+
+btns:Button("Test Open 3", function()
+    clickHatchButton("Open 3")
+end)
+
+btns:Button("Test Auto", function()
+    clickHatchButton("Auto")
 end)
 
 btns:Seperator()
@@ -594,8 +734,7 @@ end)
 btns:Seperator()
 
 btns:Button("Stats Counter", function()
-    local player = game:GetService("Players").LocalPlayer
-    local playerGui = player:FindFirstChild("PlayerGui")
+    local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
     local screenGui = playerGui and playerGui:FindFirstChild("ScreenGui")
     local mobileStats = screenGui and screenGui:FindFirstChild("MobileStats")
 

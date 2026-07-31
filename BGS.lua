@@ -723,7 +723,17 @@ btns:Button("Press Game Open 1", function()
 end)
 
 btns:Button("Press Game Open 3", function()
-    pressGameHatchButton("Open 3")
+    -- Open 3 is not detected reliably, so use the working Open 1
+    -- button three times with a delay between each press.
+    task.spawn(function()
+        for i = 1, 3 do
+            if not pressGameHatchButton("Open 1") then
+                break
+            end
+
+            task.wait(0.85)
+        end
+    end)
 end)
 
 btns:Button("Press Game Auto", function()
@@ -749,12 +759,21 @@ btns:Toggle("Repeat Game Open 3", false, function(bool)
     getgenv().repeatGameOpen3 = bool
 
     while getgenv().repeatGameOpen3 do
-        if not pressGameHatchButton("Open 3") then
-            getgenv().repeatGameOpen3 = false
-            break
+        -- Three sequential presses of the working Open 1 button.
+        for i = 1, 3 do
+            if not getgenv().repeatGameOpen3 then
+                break
+            end
+
+            if not pressGameHatchButton("Open 1") then
+                getgenv().repeatGameOpen3 = false
+                break
+            end
+
+            task.wait(0.85)
         end
 
-        task.wait(0.4)
+        task.wait(0.35)
     end
 end)
 
